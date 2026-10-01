@@ -65,7 +65,7 @@ input{font:inherit;padding:8px;border:2px solid var(--line);border-radius:10px;b
     <div class="card"><h2>Dükkan</h2><div id="shop"></div></div><div class="card"><h2>🐔 Çiftlik</h2><div id="farm"></div></div><div class="card"><h2>🏭 Fabrika</h2><div id="fab"></div></div>
     <div class="card"><h2>🏅 Rozetler</h2><div id="bd" class="mut"></div></div><div class="card"><h2>🔔 Son olaylar</h2><div id="lg" class="mut"></div></div>
   </section>
-  <section id="v-market" hidden>
+  <section id="v-market" hidden><div class="card"><h2>🏛️ Hal piyasası</h2><div id="hal"></div></div>
     <div class="card"><h2>📦 Müşteri siparişleri</h2><div id="ordl"></div></div>
     <div class="card"><div id="mk-inv"></div></div>
     <div class="card"><h2>Oyuncu pazarı</h2><div id="mk-list"></div></div>
@@ -109,7 +109,7 @@ const drawLog=()=>set('lg',LOG.map(esc).join('<br>')||'Henüz olay yok.');
 const wx=()=>{const x=Math.sin(Math.floor(Date.now()/36e5)*12.9898)*43758.5453,r=x-Math.floor(x);return r<.25?'rain':r<.6?'cloud':'sun'};
 const WXE={rain:'🌧️ Yağmur: otomatik sulama',cloud:'☁️ Bulutlu',sun:'☀️ Güneşli: +%5 şans'};
 const ev=()=>{const d=new Date().getDay();return d===0||d===6?2:1};
-const A={tavuk:{n:'Tavuk',e:'🐔',p:500,k:'yumurta',t:300},inek:{n:'İnek',e:'🐄',p:2000,k:'sut',t:600}};
+const A={tavuk:{n:'Tavuk',e:'🐔',p:500,k:'yumurta',t:300},inek:{n:'İnek',e:'🐄',p:2000,k:'sut',t:600},havuz:{n:'Balık havuzu',e:'🐟',p:2500,k:'balik',t:900},kovan:{n:'Arı kovanı',e:'🐝',p:3000,k:'bal',t:1800},elma:{n:'Elma ağacı',e:'🍎',p:1500,k:'elma',t:3600},portakal:{n:'Portakal ağacı',e:'🍊',p:1800,k:'portakal',t:3600}};
 const R=[
  {id:'havucsuyu',n:'Havuç suyu',e:'🧃',i:{havuc:3},t:60,p:40},
  {id:'recel',n:'Reçel',e:'🍯',i:{cilek:3},t:90,p:120},
@@ -119,6 +119,7 @@ const R=[
 ];
 C.yumurta={n:'Yumurta',e:'🥚',g:0,s:0,p:12,l:99,x:0,a:1};
 C.sut={n:'Süt',e:'🥛',g:0,s:0,p:30,l:99,x:0,a:1};
+Object.entries({elma:['Elma','🍎',35],portakal:['Portakal','🍊',55],bal:['Bal','🐝',90],balik:['Balık','🐟',70]}).forEach(([k,v])=>{C[k]={n:v[0],e:v[1],g:0,s:0,p:v[2],l:99,x:0,a:1}});
 R.forEach(r=>{C[r.id]={n:r.n,e:r.e,g:0,s:0,p:r.p,l:99,x:0,a:1}});
 const pnd=k=>{const n=S.an[k]||0;return Math.min(8*n,Math.floor((Date.now()-S.at)/1000/A[k].t)*n)};
 const penTake=()=>{let n=0;for(const k in A){const q=pnd(k);if(q){S.inv[A[k].k]=(S.inv[A[k].k]||0)+q;n+=q}}S.at=Date.now();return n};
@@ -127,7 +128,7 @@ const extraRows=()=>{const k=S.kv||0,kc=500*(k+1)*(k+1),sc=S.sc>Date.now();
 function drawFarm(){
  if(!S)return;
  const tot=Object.keys(A).reduce((a,k)=>a+pnd(k),0);
- set('farm',Object.keys(A).map(k=>{const a=A[k],n=S.an[k]||0;return '<div class="row"><span>'+a.e+' '+a.n+' <span class="mut">('+n+'/4 · '+C[a.k].e+' '+pnd(k)+' hazır)</span></span><button class="btn" data-an="'+k+'"'+(n>=4||S.coins<a.p?' disabled':'')+'>'+a.p+' 🪙</button></div>'}).join('')+'<div class="row"><span class="mut">Tavuk 5, inek 10 dakikada bir ürün verir (en çok 8 birikir).</span><button class="btn" data-pen="1"'+(tot?'':' disabled')+'>Topla ('+tot+')</button></div>');
+ set('farm',Object.keys(A).map(k=>{const a=A[k],n=S.an[k]||0;return '<div class="row"><span>'+a.e+' '+a.n+' <span class="mut">('+n+'/4 · '+C[a.k].e+' '+pnd(k)+' hazır)</span></span><button class="btn" data-an="'+k+'"'+(n>=4||S.coins<a.p?' disabled':'')+'>'+a.p+' 🪙</button></div>'}).join('')+'<div class="row"><span class="mut">Süreler: 🐔5 dk · 🐄10 dk · 🐟15 dk · 🐝30 dk · 🍎🍊60 dk. Her birimde en çok 8 ürün birikir.</span><button class="btn" data-pen="1"'+(tot?'':' disabled')+'>Topla ('+tot+')</button></div>');
 }
 function drawFab(){
  if(!S)return;
@@ -136,6 +137,23 @@ function drawFab(){
  set('fab',h+R.map((r,i)=>'<div class="row"><span>'+r.e+' '+r.n+' <span class="mut">('+Object.keys(r.i).map(k=>r.i[k]+' '+C[k].e+', sende '+(S.inv[k]||0)).join(' ')+' · '+r.t+' sn)</span></span><button class="btn" data-mk="'+i+'"'+(j||Object.keys(r.i).some(k=>(S.inv[k]||0)<r.i[k])?' disabled':'')+'>Üret</button></div>').join(''));
 }
 const drawTut=()=>set('tut',S.tut?'':'<div class="card"><h2>👋 Hoş geldin!</h2><p class="mut">1) Bir tohum aracı seç, boş tarlaya dokun. 2) 💧 Sula aracını seçip tohuma dokun. 3) Olgunlaşınca dokunup hasat et. 4) Pazar sekmesinde sat, siparişleri teslim et. 5) Köstebek çıkarsa hemen dokun!</p><button class="btn" data-tut="1">Anladım</button></div>');
+const SEAS=[['🌸 İlkbahar',['marul','havuc','cilek']],['☀️ Yaz',['domates','misir']],['🍂 Sonbahar',['balkabagi','sogan']],['❄️ Kış',['havuc','sogan']]];
+const seas=()=>SEAS[SEASON()%4],inS=k=>seas()[1].includes(k);
+function drawHal(){
+ const d=dayN(),n=new Date(),left=Math.ceil((new Date(n.getFullYear(),n.getMonth(),n.getDate()+1)-n)/36e5),B='▁▂▃▄▅▆▇█';
+ set('hal','<p class="mut">Fiyatlar gün boyu sabit, '+left+' saat sonra yenilenir. Çubuklar son 7 günü gösterir. '+seas()[0]+' sezonu: '+seas()[1].map(k=>C[k].e).join('')+' hasadında +%50 XP.</p>'+Object.keys(C).map(k=>{
+  const v=[6,5,4,3,2,1,0].map(i=>unit(k,d-i)),mn=Math.min(...v),mx=Math.max(...v),t=unit(k),y=unit(k,d-1),ch=Math.round((t-y)/y*100);
+  return '<div class="row"><span>'+C[k].e+' '+C[k].n+' <span class="mut">'+v.map(x=>B[mx>mn?Math.round((x-mn)/(mx-mn)*7):3]).join('')+'</span></span><b>'+t+' 🪙 <span style="color:var(--'+(ch>=0?'leaf':'bad')+')">'+(ch>=0?'▲':'▼')+Math.abs(ch)+'%</span></b></div>'}).join(''));
+}
+const chest=()=>{const r=Math.random(),u=unl();
+ if(r<.5){const c=60+Math.floor(Math.random()*240);S.coins+=c;return c+' 🪙'}
+ if(r<.85){const k=u[Math.floor(Math.random()*u.length)],q=2+Math.floor(Math.random()*5);S.inv[k]=(S.inv[k]||0)+q;return q+' '+C[k].e+' '+C[k].n}
+ if(r<.97){const k=Object.keys(DECO)[Math.floor(Math.random()*3)];if((S.deco[k]||0)<8){S.deco[k]=(S.deco[k]||0)+1;return DECO[k].e+' '+DECO[k].n}S.coins+=200;return '200 🪙'}
+ S.coins+=1500;return '1500 🪙 JACKPOT'};
+const THEMES={toprak:['Toprak',0],kum:['Kum',400,'#b79b5f','#cdb274'],kar:['Kar',400,'#8fa6b5','#a9bfce'],gul:['Gül',400,'#8d4f66','#a96a82']};
+const AVS=['👤','🧑‍🌾','👩‍🌾','🦊','🐸','🐼','🦉','🌻'];
+const applyTheme=()=>{const t=THEMES[S.tm]||THEMES.toprak,st=document.documentElement.style;if(t[2]){st.setProperty('--soil',t[2]);st.setProperty('--soil2',t[3])}else{st.removeProperty('--soil');st.removeProperty('--soil2')}};
+const extraRows2=()=>{const free=S.ch!==dayN();return '<div class="row"><span>📦 Gizemli sandık <span class="mut">(günde 1 bedava, sonra 150 🪙)</span></span><button class="btn" data-chest="1"'+(free||S.coins>=150?'':' disabled')+'>'+(free?'Bedava aç':'150 🪙')+'</button></div><div class="row"><span>🎨 Zemin</span><span class="f">'+Object.keys(THEMES).map(k=>{const t=THEMES[k],own=!t[1]||S.tmo[k];return '<button class="t" data-tm="'+k+'" aria-pressed="'+(S.tm===k)+'"'+(!own&&S.coins<t[1]?' disabled':'')+'>'+t[0]+(own?'':' '+t[1]+' 🪙')+'</button>'}).join('')+'</span></div><div class="row"><span>🙂 Avatar</span><span class="f">'+AVS.map(a=>'<button class="t" data-av="'+a+'" aria-pressed="'+(S.av===a)+'">'+a+'</button>').join('')+'</span></div>'};
 function welcome(){const now=Date.now(),r=S.plots.filter(p=>p&&p.c&&C[p.c]&&p.at&&now-p.at>=C[p.c].g*1000).length,a=Object.keys(A).reduce((x,k)=>x+pnd(k),0);if(r||a)say('Sen yokken '+(r?r+' tarla hasada hazır oldu. ':'')+(a?a+' çiftlik ürünü birikti.':''))}
 function fl(i,t){const b=document.querySelector('[data-i="'+i+'"]');if(!b)return;const r=b.getBoundingClientRect(),e=document.createElement('div');e.className='fl';e.textContent=t;e.style.left=r.left+r.width/2+'px';e.style.top=r.top+'px';document.body.appendChild(e);setTimeout(()=>e.remove(),900)}
 
@@ -143,8 +161,10 @@ const $=i=>document.getElementById(i);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const lvl=()=>Math.floor(Math.sqrt(S.xp/10))+1;
 const unl=()=>Object.keys(C).filter(k=>C[k].l<=lvl()&&!C[k].a);
-const mul=k=>{const x=Math.sin(Math.floor(Date.now()/36e5)*7.13+Object.keys(C).indexOf(k)*3.7)*43758.5453;return .6+.5*(x-Math.floor(x))};
-const unit=k=>Math.max(1,Math.round(C[k].p*mul(k)));
+const dayN=()=>{const d=new Date();return Math.floor((d.getTime()-d.getTimezoneOffset()*6e4)/864e5)};
+const mulD=(k,d)=>{const x=Math.sin(d*7.13+Object.keys(C).indexOf(k)*3.7)*43758.5453;return .6+.5*(x-Math.floor(x))};
+const mul=k=>mulD(k,dayN());
+const unit=(k,d)=>Math.max(1,Math.round(C[k].p*mulD(k,d===undefined?dayN():d)));
 const npc=k=>unit(k)*(S.inv[k]||0);
 const save=()=>{dirty=true};
 const say=(t,e)=>{const m=$('msg');m.textContent=t;m.className='msg'+(e?' err':'');if(t){snd(e?200:660);LOG.unshift(new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})+' '+t);LOG.length=Math.min(LOG.length,12);drawLog()}};
@@ -169,7 +189,7 @@ onAuthStateChanged(auth,async u=>{
   try{await setDoc(doc(db,'names',nk(n)),{uid})}catch(e1){n=n.slice(0,13)+Math.floor(Math.random()*900+100);try{await setDoc(doc(db,'names',nk(n)),{uid})}catch(e2){}}
   await setDoc(r,newUser(n));s=await getDoc(r);
  }
- S=s.data();S.moles=S.moles||[];S.guild=S.guild||null;S.gp=S.gp||0;S.gs=S.gs||0;S.q=S.q||{d:0,c:{},done:{}};S.planter=!!S.planter;S.pcrop=S.pcrop||'havuc';S.lastGR=S.lastGR||0;S.streak=S.streak||0;S.deco=S.deco||{};S.ach=S.ach||{};S.ord=(S.ord||[]).filter(o=>C[o.k]);S.gtS=S.gtS||0;S.gtN=S.gtN||0;S.an=S.an||{};S.at=S.at||Date.now();S.job=S.job||null;S.kv=S.kv||0;S.sc=S.sc||0;S.tut=S.tut||0;S.th=S.th||0;S.ts=S.ts||0;S.tv=S.tv||0;rollover();S.plots=S.plots.map(p=>p&&p.w?null:p);nextEv=Infinity;
+ S=s.data();S.moles=S.moles||[];S.guild=S.guild||null;S.gp=S.gp||0;S.gs=S.gs||0;S.q=S.q||{d:0,c:{},done:{}};S.planter=!!S.planter;S.pcrop=S.pcrop||'havuc';S.lastGR=S.lastGR||0;S.streak=S.streak||0;S.deco=S.deco||{};S.ach=S.ach||{};S.ord=(S.ord||[]).filter(o=>C[o.k]);S.gtS=S.gtS||0;S.gtN=S.gtN||0;S.an=S.an||{};S.at=S.at||Date.now();S.job=S.job||null;S.kv=S.kv||0;S.sc=S.sc||0;S.tut=S.tut||0;S.ch=S.ch||0;S.tm=S.tm||'toprak';S.tmo=S.tmo||{};S.av=S.av||'👤';S.th=S.th||0;S.ts=S.ts||0;S.tv=S.tv||0;rollover();S.plots=S.plots.map(p=>p&&p.w?null:p);nextEv=Infinity;
  await collect();await getMoles();draw();show('garden');startChat();welcome();
 });
 
@@ -181,7 +201,7 @@ function click(i){
  else if(p&&p.c){
   const c=C[p.c];
   if(p.at&&Date.now()-p.at>=c.g*1000){
-   const b=lvl(),q=Math.random()<.1+.05*(S.kv||0)+(wx()==='sun'?.05:0)?4:2,xg=c.x*ev();S.inv[p.c]=(S.inv[p.c]||0)+q;S.xp+=xg;S.plots[i]=null;cnt('h');fl(i,'+'+q+' '+c.e);
+   const b=lvl(),q=Math.random()<.1+.05*(S.kv||0)+(wx()==='sun'?.05:0)?4:2,xg=Math.round(c.x*ev()*(inS(p.c)?1.5:1));S.inv[p.c]=(S.inv[p.c]||0)+q;S.xp+=xg;S.plots[i]=null;cnt('h');fl(i,'+'+q+' '+c.e);
    say((q>2?'✨ Şanslı hasat! ':'')+q+' '+c.n+' topladın! +'+xg+' XP');if(lvl()>b)say('Seviye '+lvl()+'! Yeni bitkiler açıldı.');
   }else if(!p.at){if(tool==='water'){p.at=Date.now();say('Sulandı, büyüyor.')}else say('Önce sulama aletini seç.',1)}
   else say('Henüz olgunlaşmadı.',1);
@@ -207,16 +227,16 @@ function drawGrid(){
 }
 function drawBar(){
  const l=lvl(),lo=(l-1)**2*10,hi=l*l*10;
- $('bar').innerHTML='<span>👤 '+esc(S.name)+'</span><span>🪙 '+S.coins+'</span><span>⭐ Seviye '+l+'</span><span class="mut">'+S.xp+' / '+hi+' XP</span><span>'+WXE[wx()]+(ev()>1?' 🎉 2× XP':'')+'</span><button class="btn" data-snd="1" aria-label="Ses">'+(mute?'🔇':'🔊')+'</button><button class="btn" data-out="1">Çıkış</button><div class="xp"><i style="width:'+Math.min(100,(S.xp-lo)/(hi-lo)*100)+'%"></i></div>';
+ $('bar').innerHTML='<span>'+S.av+' '+esc(S.name)+'</span><span>🪙 '+S.coins+'</span><span>⭐ Seviye '+l+'</span><span class="mut">'+S.xp+' / '+hi+' XP</span><span>'+seas()[0]+' · '+WXE[wx()]+(ev()>1?' 🎉 2× XP':'')+'</span><button class="btn" data-snd="1" aria-label="Ses">'+(mute?'🔇':'🔊')+'</button><button class="btn" data-out="1">Çıkış</button><div class="xp"><i style="width:'+Math.min(100,(S.xp-lo)/(hi-lo)*100)+'%"></i></div>';
 }
 function drawPanels(){
  $('tools').innerHTML='<button class="t" data-tool="water" aria-pressed="'+(tool==='water')+'">💧 Sula</button>'+unl().map(k=>'<button class="t" data-tool="'+k+'" aria-pressed="'+(tool===k)+'">'+C[k].e+' '+C[k].n+' ('+(C[k].s||'bedava')+')</button>').join('');
  const pc=S.plots.length*50-200;
  const bd=Date.now()-(S.lastBonus||0)<864e5;
  $('shop').innerHTML='<div class="row"><span>🎁 Günlük hediye</span><button class="btn" data-bonus="1"'+(bd?' disabled':'')+'>'+(bd?'Yarın tekrar gel':(40+lvl()*10)+' 🪙 al')+'</button></div><div class="row"><span>🟫 Yeni tarlalar (+4) <span class="mut">'+S.plots.length+'/20</span></span><button class="btn" data-buy="plot"'+(S.plots.length>=20||S.coins<pc?' disabled':'')+'>'+(S.plots.length>=20?'En fazla':pc+' 🪙')+'</button></div>'+
-  '<div class="row"><span>🧙 Sulama cücesi <span class="mut">(Seviye 8)</span></span><button class="btn" data-buy="gnome"'+(S.gnome||lvl()<8||S.coins<WG?' disabled':'')+'>'+(S.gnome?'Satın alındı':WG+' 🪙')+'</button></div>'+planterRows()+decoRows()+extraRows();
+  '<div class="row"><span>🧙 Sulama cücesi <span class="mut">(Seviye 8)</span></span><button class="btn" data-buy="gnome"'+(S.gnome||lvl()<8||S.coins<WG?' disabled':'')+'>'+(S.gnome?'Satın alındı':WG+' 🪙')+'</button></div>'+planterRows()+decoRows()+extraRows()+extraRows2();
 }
-function draw(){checkAch();drawBar();drawGrid();drawPanels();drawMoles();drawDeco();drawBadges();drawOrders();drawTut();drawFarm();drawFab()}
+function draw(){checkAch();drawBar();drawGrid();drawPanels();drawMoles();drawDeco();drawBadges();drawOrders();drawTut();drawFarm();drawFab();applyTheme()}
 
 /* ---------- Pazar ---------- */
 async function collect(){
@@ -225,8 +245,9 @@ async function collect(){
  if(!qs.empty){save();draw()}
 }
 async function drawMarket(){
+ drawHal();
  const inv=Object.keys(S.inv).filter(k=>S.inv[k]>0&&C[k]);
- $('mk-inv').innerHTML='<h2>Deponun</h2><p class="mut">Tüccar fiyatları her saat değişir.</p>'+(inv.map(k=>'<div class="row"><span>'+C[k].e+' '+C[k].n+' × '+S.inv[k]+'</span><span class="f"><input id="q-'+k+'" type="number" min="1" max="'+S.inv[k]+'" value="'+S.inv[k]+'" aria-label="Adet"><input id="p-'+k+'" type="number" min="1" value="'+C[k].p+'" aria-label="Birim fiyat"><button class="btn" data-list="'+k+'">Pazara koy</button><button class="btn" data-npc="'+k+'">Tüccara '+npc(k)+' 🪙 ('+unit(k)+'/adet)</button></span></div>').join('')||'<p class="mut">Deponda ürün yok. Hasat edince burada görünür.</p>');
+ $('mk-inv').innerHTML='<h2>Deponun</h2><p class="mut">Hal fiyatları gün boyu sabit, gece yarısı değişir.</p>'+(inv.map(k=>'<div class="row"><span>'+C[k].e+' '+C[k].n+' × '+S.inv[k]+'</span><span class="f"><input id="q-'+k+'" type="number" min="1" max="'+S.inv[k]+'" value="'+S.inv[k]+'" aria-label="Adet"><input id="p-'+k+'" type="number" min="1" value="'+unit(k)+'" aria-label="Birim fiyat"><button class="btn" data-list="'+k+'">Pazara koy</button><button class="btn" data-npc="'+k+'">Tüccara '+npc(k)+' 🪙 ('+unit(k)+'/adet)</button></span></div>').join('')||'<p class="mut">Deponda ürün yok. Hasat edince burada görünür.</p>');
  $('mk-list').innerHTML='<p class="mut">Yükleniyor…</p>';
  const qs=await getDocs(query(collection(db,'listings'),where('sold','==',false),limit(30)));
  const ls=qs.docs.map(d=>({id:d.id,...d.data()})).filter(d=>C[d.crop]).sort((a,b)=>b.createdAt-a.createdAt);
@@ -235,7 +256,7 @@ async function drawMarket(){
 async function drawTop(){
  $('tp').innerHTML='<p class="mut">Yükleniyor…</p>';
  const qs=await getDocs(query(collection(db,'users'),orderBy('xp','desc'),limit(20)));
- $('tp').innerHTML=qs.docs.map((d,i)=>{const x=d.data();return '<div class="row"><span>'+(i+1)+'. '+esc(x.name)+'</span><span class="mut">Seviye '+(Math.floor(Math.sqrt(x.xp/10))+1)+' · '+x.xp+' XP</span>'+(d.id===uid?'':'<button class="btn" data-visit="'+d.id+'">👁 Ziyaret</button><button class="btn" data-mole="'+d.id+'">🕳️ Gönder ('+MOLE_SEND+' 🪙)</button>')+'</div>'}).join('');
+ $('tp').innerHTML=qs.docs.map((d,i)=>{const x=d.data();return '<div class="row"><span>'+(i+1)+'. '+(x.av||'👤')+' '+esc(x.name)+'</span><span class="mut">Seviye '+(Math.floor(Math.sqrt(x.xp/10))+1)+' · '+x.xp+' XP</span>'+(d.id===uid?'':'<button class="btn" data-visit="'+d.id+'">👁 Ziyaret</button><button class="btn" data-mole="'+d.id+'">🕳️ Gönder ('+MOLE_SEND+' 🪙)</button>')+'</div>'}).join('');
 }
 function show(v){
  ['garden','market','top','chat','guild','visit'].forEach(k=>{$('v-'+k).hidden=k!==v});
@@ -324,7 +345,7 @@ const ACH=[
  ['v','🤝 İyi komşu','10 kez bahçe yardımı yap',s=>s.tv>=10,200]
 ];
 function checkAch(){ACH.forEach(a=>{if(!S.ach[a[0]]&&a[3](S)){S.ach[a[0]]=1;S.coins+=a[4];say('🏅 Rozet: '+a[1]+'! +'+a[4]+' 🪙');save()}})}
-const drawBadges=()=>{$('bd').innerHTML=ACH.map(a=>S.ach[a[0]]?'<b>'+a[1]+'</b>':'<span style="opacity:.6">🔒 '+a[2]+'</span>').join(' · ')};
+const drawBadges=()=>{$('bd').innerHTML=ACH.map(a=>S.ach[a[0]]?'<b>'+a[1]+'</b>':'<span style="opacity:.6">🔒 '+a[2]+'</span>').join(' · ')+'<p>📊 Hasat '+S.th+' · Satış '+S.ts+' · Yardım '+S.tv+' · Seviye '+lvl()+' · Çiftlik birimi '+Object.values(S.an).reduce((a,b)=>a+b,0)+'</p>'};
 function drawOrders(){
  S.ord=S.ord.filter(o=>C[o.k]);const u=unl();
  while(S.ord.length<3){const k=u[Math.floor(Math.random()*u.length)],q=3+Math.floor(Math.random()*6);S.ord.push({k,q,r:Math.round(q*C[k].p*1.7)})}
@@ -387,6 +408,9 @@ document.addEventListener('click',async e=>{
   else if(d.buy==='planter'&&S.coins>=PG&&lvl()>=12&&!S.planter){S.coins-=PG;S.planter=true;say('Ekim cücesi işe başladı.')}
   else if(d.pc){S.pcrop=d.pc;say(C[d.pc].n+' ekilecek.')}
   else if(d.tut){S.tut=1}
+  else if(d.chest){const free=S.ch!==dayN();if(free||S.coins>=150){if(!free)S.coins-=150;S.ch=dayN();say('📦 Sandıktan çıktı: '+chest())}}
+  else if(d.tm&&THEMES[d.tm]){const t=THEMES[d.tm];if(!t[1]||S.tmo[d.tm]||S.coins>=t[1]){if(t[1]&&!S.tmo[d.tm]){S.coins-=t[1];S.tmo[d.tm]=1}S.tm=d.tm}}
+  else if(d.av&&AVS.includes(d.av)){S.av=d.av}
   else if(d.kv){const k=S.kv||0,c=500*(k+1)*(k+1);if(k<5&&S.coins>=c){S.coins-=c;S.kv=k+1;say('Kova yükseltildi: seviye '+S.kv)}}
   else if(d.sc){if(!(S.sc>Date.now())&&S.coins>=400){S.coins-=400;S.sc=Date.now()+864e5;say('Korkuluk dikildi, 24 saat korumalı.')}}
   else if(d.an&&A[d.an]){const a=A[d.an];if(S.coins>=a.p&&(S.an[d.an]||0)<4){penTake();S.coins-=a.p;S.an[d.an]=(S.an[d.an]||0)+1;say(a.n+' çiftliğe katıldı.')}}
