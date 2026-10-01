@@ -41,11 +41,11 @@ input[type=checkbox]{width:auto;margin:0 8px 0 0}.chk{display:block;margin:4px 0
   <p id="aerr" role="alert"></p>
 </form>
 <div id="app" hidden><div class="card bar" id="bar"></div><p class="msg" id="msg" role="status"></p><main id="v"></main>
-<nav class="tabs" id="tabs" hidden><button class="t" data-a="tab" data-v="work"><span>🧑‍🌾</span>İş<b class="bdg" id="wb"></b></button><button class="t" data-a="tab" data-v="stall"><span>🏪</span>Tezgah</button><button class="t" data-a="tab" data-v="cust"><span>👥</span>Müşteri<b class="bdg" id="cb"></b></button><button class="t" data-a="tab" data-v="pazar"><span>🛍️</span>Pazar</button><button class="t" data-a="tab" data-v="market"><span>🛒</span>Market</button></nav></div>
+<nav class="tabs" id="tabs" hidden><button class="t" data-a="tab" data-v="work"><span>🧑‍🌾</span>İş<b class="bdg" id="wb"></b></button><button class="t" data-a="tab" data-v="stall"><span>🏪</span>Tezgah</button><button class="t" data-a="tab" data-v="cust"><span>👥</span>Müşteri<b class="bdg" id="cb"></b></button><button class="t" data-a="tab" data-v="pazar"><span>🛍️</span>Pazar</button><button class="t" data-a="tab" data-v="market"><span>🛒</span>Market</button><button class="t" data-a="tab" data-v="koy"><span>🏘️</span>Köy</button></nav></div>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,onAuthStateChanged,sendPasswordResetEmail,setPersistence,browserLocalPersistence,browserSessionPersistence} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import {getFirestore,doc,getDoc,setDoc,collection,query,limit,getDocs,addDoc,where,deleteDoc,runTransaction} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {getFirestore,doc,getDoc,setDoc,collection,query,limit,getDocs,addDoc,where,orderBy,deleteDoc,runTransaction} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 const firebaseConfig = {
   apiKey: "AIzaSyB91qaXPfss8qloRDsUV8snNIaA8CXf_b4",
   authDomain: "bahcivanlar-17544.firebaseapp.com",
@@ -67,7 +67,8 @@ const START={tarim:{coins:150,inv:{s_havuc:12,s_bugday:6,gubre:2}},hayvan:{coins
 const TAX=.2,HOUR=36e5,CUT=6e4,AV=['👵','👨‍🍳','🧑‍🌾','👩‍🏫','🧔','👧','🧓','👨‍🦰','👩‍🔧','🧑‍🎨'];
 const nm=k=>I[k]?I[k][1]:AN[k].n,em=k=>I[k]?I[k][0]:AN[k].e;
 const save=()=>{dirty=true};
-const say=(t,e)=>{const m=$('msg');m.textContent=t;m.className='msg'+(e?' err':'');clearTimeout(say.t);say.t=setTimeout(()=>{m.textContent=''},6000)};
+const beep=()=>{try{const x=beep.c||(beep.c=new AudioContext()),o=x.createOscillator(),g=x.createGain();o.frequency.value=660;g.gain.value=.04;o.connect(g);g.connect(x.destination);o.start();o.stop(x.currentTime+.07)}catch(e){}};
+const say=(t,e)=>{if(!e)beep();const m=$('msg');m.textContent=t;m.className='msg'+(e?' err':'');clearTimeout(say.t);say.t=setTimeout(()=>{m.textContent=''},6000)};
 const add=(k,n)=>{S.inv[k]=(S.inv[k]||0)+n;if(S.inv[k]<=0)delete S.inv[k]};
 const have=k=>S.inv[k]||0,lv=()=>1+Math.floor(Math.sqrt((S.xp||0)/25)),gx=n=>{S.xp=(S.xp||0)+Math.ceil(n)};
 const sdone=p=>p&&Date.now()-p.at>=CR[p.s].t*1000;
@@ -88,7 +89,30 @@ const npLeft=k=>{if(S.np.h!==hr())S.np={h:hr(),s:{}};return NP[k]-(S.np.s[k]||0)
 const QS=[['Bir ürün üret ya da topla',()=>S.xp>0,50],['1 müşteriyi karşıla',()=>S.st.c>=1,80],['Pazara 1 ilan ver',()=>S.st.l>=1,80],['Seviye 3 ol',()=>lv()>=3,200]];
 const qc=()=>S.q<QS.length?'<div class="card">🎯 <b>Görev:</b> '+QS[S.q][0]+' <span class="mut">(+'+QS[S.q][2]+' 🪙)</span></div>':'';
 const readyN=()=>S.pf==='tarim'?S.plots.filter(sdone).length:S.pf==='hayvan'?S.an.filter(a=>a&&(a.f>0?Date.now()-a.at>=AN[a.k].t*1000:have('yem')>0)).length:RC.filter(r=>r[3]<=lv()&&!lack(r)).length;
-const PZ=[];let pzAt=0,VW=null,vwAt=0;
+const PZ=[],CH={},LB=[],WN=[],GL=[];let pzAt=0,VW=null,vwAt=0,koAt=0,lbAt=0,pr=0;
+/* ---- köy: sohbet, talepler, hediye, lonca, sıralama, panayır, başarımlar ---- */
+const post=t=>{if(Date.now()-(post.t||0)<2e4)return;post.t=Date.now();addDoc(collection(db,'chat'),{uid,name:S.name,text:('📢 '+t).slice(0,140),createdAt:Date.now()}).catch(()=>{})};
+const chp=g=>g==='1'?collection(db,'guilds',S.guild,'chat'):collection(db,'chat');
+const chl=g=>(CH[g]||[]).map(m=>m.text.startsWith('📢')?'<div class="mut">'+esc(m.text)+'</div>':'<div><b>'+esc(m.name)+':</b> '+esc(m.text)+'</div>').join('')||'<p class="mut">Henüz mesaj yok.</p>';
+const cbox=g=>'<div id="chl'+g+'" style="max-height:200px;overflow:auto;display:flex;flex-direction:column-reverse;margin-bottom:8px">'+chl(g)+'</div><div class="f"><input id="ct'+g+'" maxlength="140" placeholder="Mesaj yaz" style="flex:1;width:auto"><button class="btn" data-a="cs" data-g="'+g+'">Gönder</button></div>';
+const evt=()=>{const h=hr();if((h*2654435761>>>0)%100>=30)return null;const a=Object.keys(I).filter(k=>I[k][4]!=='s'&&k!=='yem'&&k!=='gubre');return a[(h*7919)%a.length]};
+const evb=()=>evt()?'<div class="card">🎉 <b>Köy panayırı:</b> '+em(evt())+' '+nm(evt())+' isteyen müşteriler bu saat %25 fazla öder.</div>':'';
+const AC=[['100 müşteri karşıla',()=>S.st.c>=100,300],['10 ilan ver',()=>S.st.l>=10,150],['7 gün seri',()=>S.sr.n>=7,300],['Seviye 5',()=>lv()>=5,300],['Köye 100 ürün ver',()=>(S.st.v||0)>=100,300],['10 kez yardım et',()=>(S.st.h||0)>=10,200]];
+async function loadKo(){
+ const c0=getDocs(query(chp('0'),orderBy('createdAt','desc'),limit(25))),c1=S.guild?getDocs(query(chp('1'),orderBy('createdAt','desc'),limit(25))):null,w=getDocs(query(collection(db,'wants'),where('sold','==',false),limit(30))),g=S.guild?null:getDocs(query(collection(db,'guilds'),limit(10))),l=Date.now()-lbAt>6e4?getDocs(query(collection(db,'users'),orderBy('xp','desc'),limit(10))):null;
+ CH['0']=(await c0).docs.map(d=>d.data());if(c1)CH['1']=(await c1).docs.map(d=>d.data());
+ WN.length=0;WN.push(...(await w).docs.map(d=>({id:d.id,...d.data()})).filter(x=>I[x.crop]));
+ if(g){GL.length=0;GL.push(...(await g).docs.map(d=>({id:d.id,...d.data()})))}
+ if(l){lbAt=Date.now();LB.length=0;LB.push(...(await l).docs.map(d=>({id:d.id,...d.data()})))}
+ if(tab!=='koy')return;[0,1].forEach(g=>$('chl'+g)&&($('chl'+g).innerHTML=chl(String(g))));
+ if(!/INPUT|SELECT/.test(document.activeElement.tagName))draw()}
+function koy(){const A=Object.keys(I).filter(k=>I[k][4]!=='s'),op=a=>a.map(k=>'<option value="'+k+'">'+em(k)+' '+nm(k)+'</option>').join('');
+ const gd=S.guild?'<div class="card"><h2>🛡️ Lonca sohbeti</h2>'+cbox('1')+'<button class="btn" data-a="gl">Loncadan ayrıl</button></div>':'<div class="card"><h2>🛡️ Lonca</h2>'+(GL.map(x=>'<div class="row"><span>'+esc(x.name)+'</span><button class="btn" data-a="gj" data-id="'+x.id+'">Katıl</button></div>').join('')||'<p class="mut">Henüz lonca yok.</p>')+'<div class="f" style="margin-top:8px"><input id="gnm" maxlength="16" placeholder="Yeni lonca adı" style="width:auto;flex:1"><button class="btn" data-a="gk">Kur</button></div></div>';
+ const wn='<div class="card"><h2>📋 Alım talepleri</h2><p class="mut">Birine lazım olanı ver, parayı hemen al (%20 vergi).</p>'+(WN.map(x=>'<div class="row"><span>'+em(x.crop)+' '+nm(x.crop)+' ×'+x.qty+' <span class="mut">'+x.price+' 🪙/adet · '+esc(x.name)+'</span></span>'+(x.buyer===uid?'<button class="btn" data-a="wx" data-id="'+x.id+'">İptal</button>':'<button class="btn" data-a="wf" data-id="'+x.id+'"'+(have(x.crop)<x.qty?' disabled':'')+'>Ver +'+Math.floor(x.price*x.qty*(1-TAX))+'🪙</button>')+'</div>').join('')||'<p class="mut">Talep yok.</p>')+'<div class="f"><select id="wi">'+op(A)+'</select><input id="wq" type="number" min="1" max="200" value="5" aria-label="Adet"><input id="wpr" type="number" min="1" max="9999" value="10" aria-label="Fiyat"><button class="btn" data-a="wp">Talep aç</button></div><p class="mut">Parayı şimdi ödersin, iptalde iade edilir.</p></div>';
+ const gf='<div class="card"><h2>🎁 Hediye gönder</h2><div class="f"><select id="gc">'+op(Object.keys(S.inv))+'</select><input id="gq" type="number" min="1" value="1" aria-label="Adet"><input id="gn" placeholder="Oyuncu adı" maxlength="16"><button class="btn" data-a="gs">Gönder</button></div></div>';
+ const lb='<div class="card"><h2>🏆 Sıralama (XP)</h2>'+(LB.map((x,i)=>'<div class="row"><span>'+(i+1)+'. '+(PF[x.pf]?PF[x.pf][0]+' ':'')+esc(x.name||'?')+' <span class="mut">Sv '+(1+Math.floor(Math.sqrt((x.xp||0)/25)))+' · '+(x.xp||0)+' xp</span></span>'+(x.id===uid?'':'<button class="btn" data-a="hp" data-id="'+x.id+'">🤝 Yardım</button>')+'</div>').join('')||'<p class="mut">Yükleniyor…</p>')+'<p class="mut">Yardım: oyuncunun tarlasını hızlandırır, sen +10 🪙 kazanırsın.</p></div>';
+ const ac='<div class="card"><h2>🏅 Başarımlar</h2>'+AC.map((a,i)=>'<div class="row"><span>'+(S.ac[i]?'✅':'⬜')+' '+a[0]+'</span><span class="mut">+'+a[2]+' 🪙</span></div>').join('')+'</div>';
+ return evb()+'<div class="card"><h2>💬 Köy sohbeti</h2>'+cbox('0')+'</div>'+gd+wn+gf+lb+ac}
 /* ---- haftalık köy siparişi ---- */
 const wk=()=>Math.floor((Date.now()+3*864e5)/(7*864e5));
 const vOrder=w=>{let s=(w*2654435761)>>>0;const r=()=>{s=s+0x6D2B79F5>>>0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296},
@@ -114,7 +138,7 @@ function stall(){const ks=Object.keys(S.inv),p=PF[S.pf];
  return '<div class="stall" style="--c:'+p[2]+'"><div class="awn"></div><div class="sign">'+p[0]+' '+p[1]+' Tezgâhı · '+esc(S.name)+'</div><div class="shelf">'+shelf+'</div><div class="ctr"></div></div>'+f}
 const cheap=k=>PZ.filter(d=>d.crop===k&&d.seller!==uid).sort((a,b)=>a.price-b.price)[0];
 const wl=c=>c.w.map(([k,q])=>em(k).repeat(Math.min(q,5))+' '+nm(k)+' ×'+q+' <span class="mut">('+have(k)+')</span>').join(', ');
-function cust(){const n=Date.now(),w=Math.max(0,Math.ceil((S.cn+CUT-n)/1000));return vcard()+'<div class="card"><h2>👥 Müşteriler ('+S.cu.length+'/10)</h2><p class="mut">'+(S.cu.length>=10?'Kuyruk dolu.':'Sonraki müşteri: '+w+' sn')+' · Her dakika yeni müşteri gelir, 5-8 dk bekler. 🔥 Seri: '+S.sr.n+' gün</p>'+(S.cu.map((c,i)=>{const miss=c.w.filter(([k,q])=>have(k)<q);return '<div class="row"><span>'+c.a+' '+(c.g?'<b>Takas:</b> '+em(c.g[0])+' '+nm(c.g[0])+' ×'+c.g[1]+' verir ↔ ':'')+'ister: '+wl(c)+(c.g?'':' · <b>'+c.r+' 🪙</b>'+(c.o?' ⭐':''))+' <span class="mut">· +'+c.x+' xp · '+Math.max(1,Math.ceil((c.e-n)/6e4))+' dk</span></span><span class="f"><button class="btn" data-a="cy" data-i="'+i+'"'+(miss.length?' disabled':'')+'>'+(c.g?'Takas et':'Sat')+'</button><button class="btn" data-a="cn" data-i="'+i+'" aria-label="Reddet">✖</button>'+miss.map(([k])=>{const l=cheap(k);return l?'<button class="btn" data-a="bl" data-id="'+l.id+'">'+em(k)+' '+l.price*l.qty+'🪙 ('+l.qty+')</button>':NP[k]&&npLeft(k)>0?'<button class="btn" data-a="nb" data-k="'+k+'">'+em(k)+' '+npPrice(k)+'🪙</button>':''}).join('')+'</span></div>'}).join('')||'<p class="mut">Müşteri bekleniyor…</p>')+'</div>'}
+function cust(){const n=Date.now(),w=Math.max(0,Math.ceil((S.cn+CUT-n)/1000));return evb()+vcard()+'<div class="card"><h2>👥 Müşteriler ('+S.cu.length+'/10)</h2><p class="mut">'+(S.cu.length>=10?'Kuyruk dolu.':'Sonraki müşteri: '+w+' sn')+' · Her dakika yeni müşteri gelir, 5-8 dk bekler. 🔥 Seri: '+S.sr.n+' gün</p>'+(S.cu.map((c,i)=>{const miss=c.w.filter(([k,q])=>have(k)<q);return '<div class="row"><span>'+c.a+' '+(c.g?'<b>Takas:</b> '+em(c.g[0])+' '+nm(c.g[0])+' ×'+c.g[1]+' verir ↔ ':'')+'ister: '+wl(c)+(c.g?'':' · <b>'+c.r+' 🪙</b>'+(c.o?' ⭐':''))+' <span class="mut">· +'+c.x+' xp · '+Math.max(1,Math.ceil((c.e-n)/6e4))+' dk</span></span><span class="f"><button class="btn" data-a="cy" data-i="'+i+'"'+(miss.length?' disabled':'')+'>'+(c.g?'Takas et':'Sat')+'</button><button class="btn" data-a="cn" data-i="'+i+'" aria-label="Reddet">✖</button>'+miss.map(([k])=>{const l=cheap(k);return l?'<button class="btn" data-a="bl" data-id="'+l.id+'">'+em(k)+' '+l.price*l.qty+'🪙 ('+l.qty+')</button>':NP[k]&&npLeft(k)>0?'<button class="btn" data-a="nb" data-k="'+k+'">'+em(k)+' '+npPrice(k)+'🪙</button>':''}).join('')+'</span></div>'}).join('')||'<p class="mut">Müşteri bekleniyor…</p>')+'</div>'}
 const left1=(k,cd)=>{const r=(S.mk[k]||0)+cd-Date.now();return r>0?Math.ceil(r/6e4):0};
 function mrows(){const r=[],L=lv(),pr=(k,q)=>Math.ceil(I[k][2]*q*2.2);
  if(S.pf==='tarim')Object.keys(CR).forEach(k=>r.push([CR[k].s,5,CR[k].l,I[CR[k].s][2]*5,0]));
@@ -125,22 +149,29 @@ function market(){const L=lv();return '<div class="card"><h2>🏪 Market</h2><p 
 function pazar(){return '<div class="card"><h2>🧑‍🌾 Köy esnafı</h2><p class="mut">Her saat yenilenen sınırlı stok. Oyuncu ilanları genelde daha ucuzdur.</p>'+Object.keys(NP).map(k=>{const l=npLeft(k);return '<div class="row"><span>'+em(k)+' <b>'+nm(k)+'</b> <span class="mut">'+l+' kaldı</span></span><button class="btn" data-a="nb" data-k="'+k+'"'+(!l||S.coins<npPrice(k)?' disabled':'')+'>'+npPrice(k)+' 🪙</button></div>'}).join('')+'</div><div class="card"><h2>🛍️ Pazar</h2><p class="mut">Serbest piyasa. Satıcı her satıştan %20 vergi öder. Adil fiyatları tezgahta görürsün.</p><div id="pl">Yükleniyor…</div></div>'}
 async function loadPz(){const qs=await getDocs(query(collection(db,'listings'),where('sold','==',false),limit(40)));
  const ls=qs.docs.map(d=>({id:d.id,...d.data()})).filter(d=>I[d.crop]).sort((a,b)=>b.createdAt-a.createdAt);PZ.length=0;PZ.push(...ls);pzAt=Date.now();if(tab==='cust')draw();
- if(tab==='pazar'&&$('pl'))$('pl').innerHTML=ls.map(d=>'<div class="row"><span>'+em(d.crop)+' '+nm(d.crop)+' ×'+d.qty+' <span class="mut">'+d.price+' 🪙/adet (adil '+I[d.crop][2]+') · '+esc(d.name)+'</span></span>'+(d.seller===uid?'<button class="btn" data-a="cx" data-id="'+d.id+'">İptal</button>':'<button class="btn" data-a="bl" data-id="'+d.id+'"'+(S.coins<d.price*d.qty?' disabled':'')+'>Al '+d.price*d.qty+' 🪙</button>')+'</div>').join('')||'<p class="mut">İlan yok. İlk ilanı tezgahından ver.</p>'}
+ if(tab==='pazar'&&$('pl'))$('pl').innerHTML=ls.map(d=>'<div class="row"><span>'+em(d.crop)+' '+nm(d.crop)+' ×'+d.qty+' <span class="mut">'+d.price+' 🪙/adet (adil '+I[d.crop][2]+') · '+esc(d.name)+(PZ.filter(y=>y.crop===d.crop).length>=3?' · 📉 bol':'')+'</span></span>'+(d.seller===uid?'<button class="btn" data-a="cx" data-id="'+d.id+'">İptal</button>':'<button class="btn" data-a="bl" data-id="'+d.id+'"'+(S.coins<d.price*d.qty?' disabled':'')+'>Al '+d.price*d.qty+' 🪙</button>')+'</div>').join('')||'<p class="mut">İlan yok. İlk ilanı tezgahından ver.</p>'}
 function draw(){
  $('bar').innerHTML='<span>'+(S.pf?PF[S.pf][0]+' ':'')+esc(S.name)+(S.pf?' · Sv '+lv()+' <small class="mut">'+S.xp+'/'+lv()**2*25+'</small>':'')+'</span><b>🪙 '+fmt(S.coins)+'</b><button class="btn" data-a="out">Çıkış</button>';
  $('tabs').hidden=!S.pf;
  if(!S.pf){$('v').innerHTML='<div class="card"><h2>Mesleğini seç</h2>'+Object.keys(PF).map(k=>'<div class="row"><span>'+PF[k][0]+' <b>'+PF[k][1]+'</b><br><span class="mut">'+PF[k][3]+'</span></span><button class="btn" data-a="pf" data-k="'+k+'">Seç</button></div>').join('')+'</div>';return}
  $('cb').textContent=S.cu.length||'';$('wb').textContent=readyN()||'';
  document.querySelectorAll('#tabs .t').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===tab));
- $('v').innerHTML=tab==='work'?work():tab==='stall'?stall():tab==='cust'?cust():tab==='pazar'?pazar():market();
+ $('v').innerHTML=tab==='work'?work():tab==='stall'?stall():tab==='cust'?cust():tab==='pazar'?pazar():tab==='koy'?koy():market();
  if(tab==='pazar'||(tab==='cust'&&Date.now()-pzAt>15000)){pzAt=Date.now();loadPz().catch(()=>{})}
+ if(tab==='koy'&&Date.now()-koAt>8000){koAt=Date.now();loadKo().catch(()=>{})}
  if(tab==='cust'&&Date.now()-vwAt>15000){vwAt=Date.now();loadVW().catch(()=>{})}
 }
 /* ---- eylemler ---- */
+async function collect2(){let ch=0;
+ for(const d of (await getDocs(query(collection(db,'gifts'),where('to','==',uid)))).docs){const x=d.data();if(I[x.crop]&&x.qty>0){add(x.crop,x.qty);say('🎁 '+x.fromName+' sana '+x.qty+' '+nm(x.crop)+' yolladı!')}await deleteDoc(d.ref);ch=1}
+ for(const d of (await getDocs(query(collection(db,'help'),where('to','==',uid)))).docs){const x=d.data(),p=S.plots[x.plot];if(p&&!sdone(p)){p.at-=(CR[p.s].t*1000-(Date.now()-p.at))/3;say('🤝 '+x.fromName+' tarlana yardım etti!')}await deleteDoc(d.ref);ch=1}
+ for(const d of (await getDocs(query(collection(db,'wants'),where('buyer','==',uid),where('sold','==',true)))).docs){const x=d.data();add(x.crop,x.qty);say('📥 Talebin karşılandı: '+x.qty+' '+nm(x.crop));await deleteDoc(d.ref);ch=1}
+ if(ch){save();draw()}}
+const collectAll=async()=>{await collect();await collect2()};
 async function collect(){const qs=await getDocs(query(collection(db,'listings'),where('seller','==',uid),where('sold','==',true)));
- for(const d of qs.docs){const x=d.data(),n=Math.floor(x.price*x.qty*(1-TAX));S.coins+=n;await deleteDoc(d.ref);say(x.qty+' '+nm(x.crop)+' satıldı: +'+n+' 🪙 (vergi sonrası)')}
+ for(const d of qs.docs){const x=d.data(),n=Math.floor(x.price*x.qty*(1-TAX));S.coins+=n;await deleteDoc(d.ref);say(x.qty+' '+nm(x.crop)+' satıldı: +'+n+' 🪙 (vergi sonrası)');post(S.name+' '+x.qty+' '+nm(x.crop)+' sattı')}
  if(!qs.empty){save();draw()}}
-document.addEventListener('click',async e=>{const b=e.target.closest('[data-a]');if(!b||!S)return;const a=b.dataset.a,d=b.dataset,i=+d.i,l0=S.pf?lv():0;
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-a]');if(!b||!S)return;if(window.Notification&&Notification.permission==='default')Notification.requestPermission();const a=b.dataset.a,d=b.dataset,i=+d.i,l0=S.pf?lv():0;
  try{
  if(a==='out'){if(dirty){dirty=false;await setDoc(doc(db,'users',uid),S)}return signOut(auth)}
  if(a==='tab'){tab=d.v;sel=null}
@@ -153,24 +184,33 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-a]')
  else if(a==='cr'){const r=RC[i];if(r[3]>lv()||lack(r))return;for(const k in r[5])add(k,-r[5][k]);add(r[0],r[4]);gx(I[r[0]][2]*r[4]/4);say(r[2]+' üretildi.')}
  else if(a==='sel')sel=d.k;
  else if(a==='bm'){const m=mrows()[i];if(m[2]>lv()||(m[4]&&left1(m[0],m[4]))||S.coins<m[3])return;if(AN[m[0]]){const s=S.an.findIndex(x=>!x);if(s<0)return say('Boş yerin yok.',1);S.an[s]={k:m[0],at:Date.now(),f:0}}else add(m[0],m[1]);S.coins-=m[3];if(m[4])S.mk[m[0]]=Date.now();say(nm(m[0])+' alındı.')}
- else if(a==='cy'){const c=S.cu[i];if(!c||!c.w.every(([k,q])=>have(k)>=q))return say('Yeterli ürünün yok.',1);c.w.forEach(([k,q])=>add(k,-q));if(c.g){add(c.g[0],c.g[1]);say('Takas yapıldı: +'+c.g[1]+' '+nm(c.g[0]))}else{S.coins+=c.r;say('Satış: +'+c.r+' 🪙')}gx(c.x);S.st.c++;const dy=Math.floor(Date.now()/864e5);if(S.sr.d!==dy){S.sr.n=S.sr.d===dy-1?S.sr.n+1:1;S.sr.d=dy;const bn=Math.min(S.sr.n,7)*10;S.coins+=bn;say('🔥 '+S.sr.n+'. gün serisi: +'+bn+' 🪙')}S.cu.splice(i,1)}
+ else if(a==='cy'){const c=S.cu[i];if(!c||!c.w.every(([k,q])=>have(k)>=q))return say('Yeterli ürünün yok.',1);c.w.forEach(([k,q])=>add(k,-q));if(c.g){add(c.g[0],c.g[1]);say('Takas yapıldı: +'+c.g[1]+' '+nm(c.g[0]))}else{const eb=evt()&&c.w.some(([k])=>k===evt())?Math.round(c.r*.25):0;S.coins+=c.r+eb;say('Satış: +'+(c.r+eb)+' 🪙'+(eb?' (panayır bonusu!)':''))}gx(c.x);S.st.c++;const dy=Math.floor(Date.now()/864e5);if(S.sr.d!==dy){S.sr.n=S.sr.d===dy-1?S.sr.n+1:1;S.sr.d=dy;const bn=Math.min(S.sr.n,7)*10;S.coins+=bn;say('🔥 '+S.sr.n+'. gün serisi: +'+bn+' 🪙')}S.cu.splice(i,1)}
  else if(a==='nb'){const k=d.k;if(!NP[k]||npLeft(k)<=0||S.coins<npPrice(k))return;S.np.s[k]=(S.np.s[k]||0)+1;S.coins-=npPrice(k);add(k,1);say(nm(k)+' alındı.')}
  else if(a==='cn')S.cu.splice(i,1);
+ else if(a==='cs'){const t=$('ct'+d.g).value.trim();if(!t)return;await addDoc(chp(d.g),{uid,name:S.name,text:t.slice(0,140),createdAt:Date.now()});$('ct'+d.g).value='';koAt=0}
+ else if(a==='wp'){const crop=$('wi').value,q=Math.floor(+$('wq').value),p=Math.floor(+$('wpr').value);if(!I[crop]||!(q>=1&&q<=200&&p>=1&&p<=9999)||q*p>S.coins)return say('Adet, fiyat ya da paran geçersiz.',1);await addDoc(collection(db,'wants'),{buyer:uid,name:S.name,crop,qty:q,price:p,sold:false,createdAt:Date.now()});S.coins-=q*p;say('Talep açıldı.');post(S.name+' '+q+' '+nm(crop)+' arıyor ('+p+'🪙/adet)');koAt=0}
+ else if(a==='wf'){const z=WN.find(y=>y.id===d.id);if(!z||have(z.crop)<z.qty)return say('Yeterli ürünün yok.',1);const ref=doc(db,'wants',d.id);const x=await runTransaction(db,async tx=>{const s=await tx.get(ref);if(!s.exists()||s.data().sold)throw 0;tx.update(ref,{sold:true,filler:uid});return s.data()});add(x.crop,-x.qty);const n=Math.floor(x.price*x.qty*(1-TAX));S.coins+=n;gx(I[x.crop][2]*x.qty/6);say('Talep karşılandı: +'+n+' 🪙');post(S.name+' '+x.qty+' '+nm(x.crop)+' tedarik etti');koAt=0}
+ else if(a==='wx'){const ref=doc(db,'wants',d.id);const x=await runTransaction(db,async tx=>{const s=await tx.get(ref);if(!s.exists()||s.data().sold)throw 0;tx.delete(ref);return s.data()});S.coins+=x.price*x.qty;say('Talep iptal edildi, para iade.');koAt=0}
+ else if(a==='gs'){const n=$('gn').value.trim(),k=$('gc').value,q=Math.floor(+$('gq').value);if(!n||!k||!(q>=1&&q<=have(k)&&q<=200))return say('Oyuncu adı ve adet geçersiz.',1);const s=await getDoc(doc(db,'names',nk(n)));if(!s.exists()||s.data().uid===uid)return say('Oyuncu bulunamadı.',1);await addDoc(collection(db,'gifts'),{from:uid,fromName:S.name,to:s.data().uid,crop:k,qty:q,createdAt:Date.now()});add(k,-q);say('Hediye gönderildi 🎁')}
+ else if(a==='hp'){const t=d.id;if(t===uid)return;if(Date.now()-(S.hp[t]||0)<6e5)return say('Bu oyuncuya 10 dk sonra tekrar yardım edebilirsin.',1);await addDoc(collection(db,'help'),{from:uid,fromName:S.name,to:t,plot:Math.floor(Math.random()*8),createdAt:Date.now()});S.hp[t]=Date.now();S.coins+=10;gx(5);S.st.h=(S.st.h||0)+1;say('🤝 Yardım gönderildi: +10 🪙')}
+ else if(a==='gj'||a==='gk'||a==='gl'){if(a==='gj')S.guild=d.id;else if(a==='gl')S.guild=null;else{const n=$('gnm').value.trim();if(n.length<3)return say('Lonca adı en az 3 karakter.',1);S.guild=(await addDoc(collection(db,'guilds'),{name:n,leader:uid,createdAt:Date.now()})).id}
+  await setDoc(doc(db,'users',uid),S);dirty=false;koAt=0;say(S.guild?'Lonca hazır.':'Loncadan ayrıldın.')}
  else if(a==='vg'){const k=d.k,O=vOrder(wk()),need=(O.find(x=>x[0]===k)||[0,0])[1],ref=doc(db,'village','w'+wk());
   const g=await runTransaction(db,async tx=>{const s=await tx.get(ref),v=s.exists()?s.data():{done:{},by:{},n:0},dn={...(v.done||{})},by={...(v.by||{})},x=Math.min(have(k),need-(dn[k]||0),60);if(x<=0)throw 0;dn[k]=(dn[k]||0)+x;by[uid]=(by[uid]||0)+x;tx.set(ref,{done:dn,by,n:(v.n||0)+x});return x});
-  add(k,-g);gx(I[k][2]*g/8);say('Köye '+g+' '+nm(k)+' verdin.');await loadVW()}
+  add(k,-g);gx(I[k][2]*g/8);S.st.v=(S.st.v||0)+g;say('Köye '+g+' '+nm(k)+' verdin.');post(S.name+' köy siparişine '+g+' '+nm(k)+' verdi');await loadVW()}
  else if(a==='vc'){const w=wk();if(S.vw.w===w&&S.vw.c)return;const O=vOrder(w),s=await getDoc(doc(db,'village','w'+w)),v=s.exists()?s.data():null;
   if(!v||!O.every(([k,q])=>((v.done||{})[k]||0)>=q))return say('Sipariş henüz tamamlanmadı.',1);
   if(!(v.by||{})[uid])return say('Önce katkı vermelisin.',1);
   const r=vRw(O);S.coins+=r;S.vw={w,c:1};say('🏘️ Köy siparişi ödülü: +'+r+' 🪙')}
  else if(a==='list'){const k=sel,q=Math.floor(+$('lq').value),p=Math.floor(+$('lp').value);if(!k||!(q>=1&&q<=have(k)&&p>=1&&p<=9999))return say('Adet ve fiyat geçersiz.',1);
-  await addDoc(collection(db,'listings'),{seller:uid,name:S.name,crop:k,qty:q,price:p,sold:false,createdAt:Date.now()});add(k,-q);S.st.l++;say('İlan verildi.')}
+  await addDoc(collection(db,'listings'),{seller:uid,name:S.name,crop:k,qty:q,price:p,sold:false,createdAt:Date.now()});add(k,-q);S.st.l++;say('İlan verildi.');post(S.name+' '+q+' '+nm(k)+' ilan verdi ('+p+'🪙/adet)')}
  else if(a==='bl'){const z=PZ.find(y=>y.id===d.id);if(z&&S.coins<z.price*z.qty)return say('Paran yetmedi.',1);const ref=doc(db,'listings',d.id);const x=await runTransaction(db,async tx=>{const s=await tx.get(ref);if(!s.exists()||s.data().sold)throw 0;tx.update(ref,{sold:true,buyer:uid});return s.data()});
   if(S.coins<x.price*x.qty)return say('Paran yetmedi.',1);S.coins-=x.price*x.qty;add(x.crop,x.qty);say(x.qty+' '+nm(x.crop)+' aldın.')}
  else if(a==='cx'){const ref=doc(db,'listings',d.id);const x=await runTransaction(db,async tx=>{const s=await tx.get(ref);if(!s.exists()||s.data().sold)throw 0;tx.delete(ref);return s.data()});add(x.crop,x.qty);say('İlan iptal edildi.')}
  }catch(err){say('İşlem tamamlanamadı. Tekrar dene (ilan satılmış ya da sipariş dolmuş olabilir).',1)}
- if(S.pf&&lv()>l0)say('🎉 Seviye '+lv()+'! Yeni ürünler / tarifler açıldı.');
+ if(S.pf&&lv()>l0){say('🎉 Seviye '+lv()+'! Yeni ürünler / tarifler açıldı.');post(S.name+' Seviye '+lv()+' oldu! 🎉')}
  while(S.pf&&S.q<QS.length&&QS[S.q][1]()){S.coins+=QS[S.q][2];say('🎯 Görev tamam: +'+QS[S.q][2]+' 🪙');S.q++}
+ if(S.pf)AC.forEach((x,i)=>{if(!S.ac[i]&&x[1]()){S.ac[i]=1;S.coins+=x[2];say('🏅 Başarım: '+x[0]+' +'+x[2]+' 🪙')}});
  save();draw()});
 
 const errs={'auth/invalid-credential':'Kullanıcı adı veya şifre hatalı.','auth/email-already-in-use':'Bu kullanıcı adı alınmış.','auth/weak-password':'Şifre en az 6 karakter olmalı.','auth/invalid-email':'Geçersiz kullanıcı adı.','auth/missing-password':'Şifre gir.','auth/too-many-requests':'Çok fazla deneme, biraz bekle.','auth/network-request-failed':'Bağlantı yok.'};
@@ -207,11 +247,11 @@ onAuthStateChanged(auth,async u=>{
  if(!s.exists()){let n=pend||'Oyuncu';
   try{await setDoc(doc(db,'names',nk(n)),{uid})}catch(e1){n=n.slice(0,13)+Math.floor(Math.random()*900+100);try{await setDoc(doc(db,'names',nk(n)),{uid})}catch(e2){}}
   await setDoc(r,{name:n,coins:50,xp:0,inv:{},plots:Array(8).fill(null),pf:null});s=await getDoc(r)}
- S=s.data();S.inv=Object.fromEntries(Object.entries(S.inv||{}).filter(([k,v])=>I[k]&&v>0));S.mk=S.mk||{};S.xp=S.xp||0;S.cu=(Array.isArray(S.cu)?S.cu:[]).filter(c=>c&&Array.isArray(c.w)&&Array.isArray(c.w[0])&&c.e);S.q=S.q||0;S.st=S.st||{c:0,l:0};S.sr=S.sr||{d:0,n:0};S.np=S.np||{h:0,s:{}};S.vw=S.vw&&S.vw.w===wk()?S.vw:{w:wk(),c:0};VW=null;vwAt=0;S.cn=S.cn||Date.now();S.an=Array.from({length:8},(_,i)=>(S.an||[])[i]).map(a=>a&&AN[a.k]?a:null);S.plots=Array.from({length:8},(_,i)=>(S.plots||[])[i]).map(p=>p&&p.s&&CR[p.s]?p:null);if(!PF[S.pf])S.pf=null;
- tab='work';await collect().catch(()=>{});draw()});
+ S=s.data();S.inv=Object.fromEntries(Object.entries(S.inv||{}).filter(([k,v])=>I[k]&&v>0));S.mk=S.mk||{};S.xp=S.xp||0;S.cu=(Array.isArray(S.cu)?S.cu:[]).filter(c=>c&&Array.isArray(c.w)&&Array.isArray(c.w[0])&&c.e);S.q=S.q||0;S.st=S.st||{c:0,l:0};S.sr=S.sr||{d:0,n:0};S.np=S.np||{h:0,s:{}};S.ac=S.ac||{};S.hp=S.hp||{};S.guild=S.guild||null;S.vw=S.vw&&S.vw.w===wk()?S.vw:{w:wk(),c:0};VW=null;vwAt=0;S.cn=S.cn||Date.now();S.an=Array.from({length:8},(_,i)=>(S.an||[])[i]).map(a=>a&&AN[a.k]?a:null);S.plots=Array.from({length:8},(_,i)=>(S.plots||[])[i]).map(p=>p&&p.s&&CR[p.s]?p:null);if(!PF[S.pf])S.pf=null;
+ tab='work';await collectAll().catch(()=>{});draw()});
 setInterval(()=>{if(S&&dirty){dirty=false;setDoc(doc(db,'users',uid),S).catch(()=>{dirty=true})}},4000);
-setInterval(()=>{if(S)collect().catch(()=>{})},30000);
-setInterval(()=>{if(!S||!S.pf)return;const n=Date.now(),c0=S.cu.length;S.cu=S.cu.filter(c=>c.e>n);let ch=S.cu.length!==c0;if(S.cu.length>=10)S.cn=n;else{let k=Math.min(Math.floor((n-S.cn)/CUT),10-S.cu.length),k0=k;if(k>0){while(k--)S.cu.push(newCust());S.cn=S.cu.length>=10?n:S.cn+k0*CUT;ch=true}}if(ch)save();$('cb').textContent=S.cu.length||'';$('wb').textContent=readyN()||'';if(tab==='cust'||(tab==='work'&&S.pf!=='market'))draw()},1000);
+setInterval(()=>{if(S)collectAll().catch(()=>{})},30000);
+setInterval(()=>{if(!S||!S.pf)return;const n=Date.now(),c0=S.cu.length;S.cu=S.cu.filter(c=>c.e>n);let ch=S.cu.length!==c0;if(S.cu.length>=10)S.cn=n;else{let k=Math.min(Math.floor((n-S.cn)/CUT),10-S.cu.length),k0=k;if(k>0){while(k--)S.cu.push(newCust());S.cn=S.cu.length>=10?n:S.cn+k0*CUT;ch=true}}if(ch)save();$('cb').textContent=S.cu.length||'';$('wb').textContent=readyN()||'';{const rn=readyN();if(rn>pr&&document.hidden&&window.Notification&&Notification.permission==='granted')new Notification('Çiftlik Çarşısı',{body:'İşin hazır!'});pr=rn}if(tab==='cust'||(tab==='work'&&S.pf!=='market'))draw()},1000);
 document.addEventListener('visibilitychange',()=>{if(S&&dirty&&document.hidden){dirty=false;setDoc(doc(db,'users',uid),S)}});
 
 </script></body></html>
