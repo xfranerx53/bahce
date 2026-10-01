@@ -41,7 +41,7 @@ input[type=checkbox]{width:auto;margin:0 8px 0 0}.chk{display:block;margin:4px 0
   <p id="aerr" role="alert"></p>
 </form>
 <div id="app" hidden><div class="card bar" id="bar"></div><p class="msg" id="msg" role="status"></p><main id="v"></main>
-<nav class="tabs" id="tabs" hidden><button class="t" data-a="tab" data-v="work"><span>🧑‍🌾</span>İş</button><button class="t" data-a="tab" data-v="stall"><span>🏪</span>Tezgah</button><button class="t" data-a="tab" data-v="cust"><span>👥</span>Müşteri<b class="bdg" id="cb"></b></button><button class="t" data-a="tab" data-v="pazar"><span>🛍️</span>Pazar</button><button class="t" data-a="tab" data-v="market"><span>🛒</span>Market</button></nav></div>
+<nav class="tabs" id="tabs" hidden><button class="t" data-a="tab" data-v="work"><span>🧑‍🌾</span>İş<b class="bdg" id="wb"></b></button><button class="t" data-a="tab" data-v="stall"><span>🏪</span>Tezgah</button><button class="t" data-a="tab" data-v="cust"><span>👥</span>Müşteri<b class="bdg" id="cb"></b></button><button class="t" data-a="tab" data-v="pazar"><span>🛍️</span>Pazar</button><button class="t" data-a="tab" data-v="market"><span>🛒</span>Market</button></nav></div>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,onAuthStateChanged,sendPasswordResetEmail,setPersistence,browserLocalPersistence,browserSessionPersistence} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -63,8 +63,8 @@ const I={},CR={},AN={},RC=[];
 [['tavuk','🐔','Tavuk','yumurta','🥚','Yumurta',1,60,120,12],['inek','🐄','İnek','sut','🥛','Süt',2,90,350,20],['ordek','🦆','Ördek','ordekyum','🥚','Ördek yumurtası',3,80,300,18],['koyun','🐑','Koyun','yun','🧶','Yün',4,120,600,30],['keci','🐐','Keçi','kecisut','🍼','Keçi sütü',5,110,700,34],['ari','🐝','Arı','bal','🍯','Bal',6,150,900,44],['kaz','🦢','Kaz','tuy','🪶','Kaz tüyü',7,150,1100,50],['manda','🐃','Manda','mandasut','🫗','Manda sütü',8,180,1500,62],['ipek','🐛','İpekböceği','ipek','🧵','İpek',9,200,1800,75],['tavsan','🐇','Tavşan','tavsanyun','🐰','Tavşan yünü',10,160,2200,70]].forEach(([k,e,n,o,oe,on,l,t,p,v])=>{AN[k]={e,n,o,l,t,p};I[o]=[oe,on,v,l,'hayvan']});
 [['yem','🪣','Yem',1,4,{bugday:2,havuc:1}],['gubre','🧪','Gübre',1,2,{havuc:2,yumurta:1}],['un','🧂','Un',2,2,{bugday:3}],['ekmek','🍞','Ekmek',3,2,{un:2,yumurta:1}],['salca','🥫','Salça',4,1,{domates:3}],['peynir','🧀','Peynir',4,1,{sut:3}],['yag','🫒','Ayçiçek yağı',5,1,{aycicegi:3}],['kek','🧁','Kek',5,2,{un:2,yumurta:2,sut:1}],['kizartma','🍟','Patates kızartması',6,2,{patates:3,yag:1}],['recel','🫙','Çilek reçeli',6,2,{cilek:3,bal:1}],['battaniye','🛏️','Battaniye',7,1,{yun:3,pamuk:2}],['pasta','🎂','Yaş pasta',8,1,{kek:2,recel:1,kabak:1}]].forEach(r=>{let s=0;for(const k in r[5])s+=I[k][2]*r[5][k];I[r[0]]=[r[1],r[2],Math.ceil(s*1.35/r[4])+1,r[3],'market'];RC.push(r)});
 const PF={tarim:['🌾','Tarım','#3f8f3a','10 ürün eker. Seviye atladıkça yeni tohumlar açılır. İleri ürünler gübre ister.'],hayvan:['🐄','Hayvancı','#b5651d','10 hayvandan ürün toplar. Hepsi yem ister, yeni hayvanlar seviyeyle açılır.'],market:['🏪','Marketçi','#2f6fa8','Yem, gübre, ekmek, peynir gibi ürünleri diğerlerinin malından üretir.']};
-const START={tarim:{coins:100,inv:{s_havuc:5}},hayvan:{coins:150,inv:{yem:3},an:'tavuk'},market:{coins:150,inv:{bugday:4,havuc:3,yumurta:2}}};
-const TAX=.2,HOUR=36e5,CUT=12e4,AV=['👵','👨‍🍳','🧑‍🌾','👩‍🏫','🧔','👧','🧓','👨‍🦰','👩‍🔧','🧑‍🎨'];
+const START={tarim:{coins:150,inv:{s_havuc:12,s_bugday:6,gubre:2}},hayvan:{coins:200,inv:{yem:8},an:'tavuk'},market:{coins:200,inv:{bugday:8,havuc:6,yumurta:4}}};
+const TAX=.2,HOUR=36e5,CUT=6e4,AV=['👵','👨‍🍳','🧑‍🌾','👩‍🏫','🧔','👧','🧓','👨‍🦰','👩‍🔧','🧑‍🎨'];
 const nm=k=>I[k]?I[k][1]:AN[k].n,em=k=>I[k]?I[k][0]:AN[k].e;
 const save=()=>{dirty=true};
 const say=(t,e)=>{const m=$('msg');m.textContent=t;m.className='msg'+(e?' err':'');clearTimeout(say.t);say.t=setTimeout(()=>{m.textContent=''},6000)};
@@ -73,23 +73,48 @@ const have=k=>S.inv[k]||0,lv=()=>1+Math.floor(Math.sqrt((S.xp||0)/25)),gx=n=>{S.
 const sdone=p=>p&&Date.now()-p.at>=CR[p.s].t*1000;
 function harvest(i){const p=S.plots[i];add(p.s,2);gx(I[p.s][2]/2);S.plots[i]=null}
 function plant(j){const c=CR[sd];if(c.l>lv())return say('Seviye '+c.l+' gerekli.',1);if(!have(c.s))return say('Tohumun yok. Marketten al.',1);if(c.l>=4){if(!have('gubre'))return say('Bu ürün ekerken 1 gübre ister.',1);add('gubre',-1)}add(c.s,-1);S.plots[j]={s:sd,at:Date.now()}}
-function feedCollect(a){const t=AN[a.k];let n=0;if(a.f>0&&Date.now()-a.at>=t.t*1000){add(t.o,1);gx(I[t.o][2]/4);a.f--;a.at=Date.now();n++}if(a.f<=0&&have('yem')){add('yem',-1);a.f=3;a.at=Date.now();n++}return n}
+function feedCollect(a){const t=AN[a.k],now=Date.now();let n=0;if(a.f>0){const k=Math.min(a.f,Math.floor((now-a.at)/(t.t*1000)));if(k>0){add(t.o,k);gx(I[t.o][2]*k/4);a.f-=k;a.at=a.f>0?a.at+k*t.t*1000:now;n+=k}}if(a.f<=0&&have('yem')){add('yem',-1);a.f=3;a.at=now;n++}return n}
 const lack=r=>Object.keys(r[5]).some(k=>have(k)<r[5][k]);
 /* ---- müşteri ---- */
 const rnd=a=>a[Math.floor(Math.random()*a.length)];
-function newCust(){const L=lv(),pool=Object.keys(I).filter(k=>I[k][4]!=='s'&&k!=='yem'&&k!=='gubre'&&I[k][3]<=L+1),own=pool.filter(k=>I[k][4]===S.pf),k=own.length&&Math.random()<.6?rnd(own):rnd(pool),v=I[k][2],q=1+Math.floor(Math.random()*(v<25?5:v<50?3:2)),base=v*q,c={id:Date.now()+Math.random(),a:rnd(AV),w:[k,q],r:0,g:null,x:Math.ceil(base/4)};
- if(Math.random()<.25){const o=pool.filter(x=>x!==k&&I[x][4]!==I[k][4]),g=rnd(o.length?o:pool.filter(x=>x!==k));c.g=[g,Math.max(1,Math.round(base*1.15/I[g][2]))];c.x=Math.ceil(base/6)}
- else c.r=Math.round(base*(1.25+.03*I[k][3]+(I[k][4]!==S.pf?.1:0)));return c}
+function newCust(){const L=lv(),pool=Object.keys(I).filter(k=>I[k][4]!=='s'&&k!=='yem'&&k!=='gubre'&&I[k][3]<=L+1),own=pool.filter(k=>I[k][4]===S.pf),oth=pool.filter(k=>I[k][4]!==S.pf),r=Math.random(),n=r<.5?1:r<.85?2:3,ks=[];
+ while(ks.length<n&&ks.length<pool.length){const k=Math.random()<.7&&own.length?rnd(own):rnd(oth.length?oth:pool);if(!ks.includes(k))ks.push(k)}
+ let base=0,rw=0;const w=ks.map(k=>{const v=I[k][2],q=1+Math.floor(Math.random()*(v<25?4:v<50?3:2)),b=v*q;base+=b;rw+=b*(1.25+.03*I[k][3]+(I[k][4]!==S.pf?.1:0));return [k,q]});
+ const c={id:Date.now()+Math.random(),o:ks.some(k=>I[k][4]!==S.pf),a:rnd(AV),w,r:Math.round(rw*(1+.05*(w.length-1))),g:null,x:Math.ceil(base/4),e:Date.now()+(5+Math.random()*3)*6e4};
+ if(Math.random()<.25){const o=pool.filter(x=>!ks.includes(x)&&I[x][4]!==I[ks[0]][4]),o2=o.length?o:pool.filter(x=>!ks.includes(x));if(o2.length){const g=rnd(o2);c.g=[g,Math.max(1,Math.round(base*1.15/I[g][2]))];c.r=0;c.x=Math.ceil(base/6)}}
+ return c}
+const NP={yem:6,gubre:4,un:4,havuc:6,bugday:6,yumurta:4,sut:3},npPrice=k=>Math.ceil(I[k][2]*1.3),hr=()=>Math.floor(Date.now()/HOUR);
+const npLeft=k=>{if(S.np.h!==hr())S.np={h:hr(),s:{}};return NP[k]-(S.np.s[k]||0)};
+const QS=[['Bir ürün üret ya da topla',()=>S.xp>0,50],['1 müşteriyi karşıla',()=>S.st.c>=1,80],['Pazara 1 ilan ver',()=>S.st.l>=1,80],['Seviye 3 ol',()=>lv()>=3,200]];
+const qc=()=>S.q<QS.length?'<div class="card">🎯 <b>Görev:</b> '+QS[S.q][0]+' <span class="mut">(+'+QS[S.q][2]+' 🪙)</span></div>':'';
+const readyN=()=>S.pf==='tarim'?S.plots.filter(sdone).length:S.pf==='hayvan'?S.an.filter(a=>a&&(a.f>0?Date.now()-a.at>=AN[a.k].t*1000:have('yem')>0)).length:RC.filter(r=>r[3]<=lv()&&!lack(r)).length;
+const PZ=[];let pzAt=0,VW=null,vwAt=0;
+/* ---- haftalık köy siparişi ---- */
+const wk=()=>Math.floor((Date.now()+3*864e5)/(7*864e5));
+const vOrder=w=>{let s=(w*2654435761)>>>0;const r=()=>{s=s+0x6D2B79F5>>>0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296},
+ pick=f=>{const a=Object.keys(I).filter(f);return a[Math.floor(r()*a.length)]},
+ ok=k=>k!=='yem'&&k!=='gubre'&&I[k][4]!=='s'&&I[k][3]<=5,
+ ks=[pick(k=>ok(k)&&I[k][4]==='tarim'&&I[k][3]<=4),pick(k=>ok(k)&&I[k][4]==='hayvan'&&I[k][3]<=4),pick(k=>ok(k)&&I[k][4]==='market')];
+ let x;do{x=pick(ok)}while(ks.includes(x));ks.push(x);
+ return ks.map(k=>[k,Math.max(8,Math.round(700/I[k][2]))])};
+const vRw=O=>Math.round(O.reduce((s,[k,q])=>s+I[k][2]*q,0)*.15);
+async function loadVW(){const s=await getDoc(doc(db,'village','w'+wk()));VW=s.exists()?s.data():{done:{},by:{},n:0};vwAt=Date.now();if(tab==='cust')draw()}
+function vcard(){const w=wk(),O=vOrder(w);if(!VW)return '<div class="card"><h2>🏘️ Köy siparişi</h2><p class="mut">Yükleniyor…</p></div>';
+ const dn=VW.done||{},mine=(VW.by||{})[uid]||0,tot=O.reduce((s,[k,q])=>s+Math.min(dn[k]||0,q),0),all=O.reduce((s,[,q])=>s+q,0),ok=O.every(([k,q])=>(dn[k]||0)>=q),left=Math.max(1,Math.ceil((7*864e5-((Date.now()+3*864e5)%(7*864e5)))/864e5)),got=S.vw.w===w&&S.vw.c;
+ return '<div class="card"><h2>🏘️ Köy siparişi</h2><p class="mut">Herkes birlikte doldurur; tamamlanınca katkı veren herkes <b>'+vRw(O)+' 🪙</b> alır. '+left+' gün kaldı · Toplam '+tot+'/'+all+' · Senin katkın: '+mine+'</p>'+O.map(([k,q])=>{const d=Math.min(dn[k]||0,q);return '<div class="row"><span>'+em(k)+' <b>'+nm(k)+'</b> '+d+'/'+q+' <span class="mut">('+have(k)+')</span></span><button class="btn" data-a="vg" data-k="'+k+'"'+(d>=q||!have(k)?' disabled':'')+'>Ver</button></div>'}).join('')+(ok?(got?'<p class="mut">✅ Ödülünü aldın.</p>':'<button class="btn big" data-a="vc"'+(mine?'':' disabled')+'>🎁 Ödülü al'+(mine?'':' (önce katkı ver)')+'</button>'):'')+'</div>'}
 /* ---- çizim ---- */
-function work(){const L=lv();
- if(S.pf==='tarim')return '<div class="seeds">'+Object.keys(CR).map(k=>{const c=CR[k],lk=c.l>L;return '<button class="t" data-a="sd" data-k="'+k+'"'+(lk?' disabled':'')+' aria-pressed="'+(sd===k)+'">'+(lk?'🔒'+c.l:em(k)+have(c.s))+'</button>'}).join('')+'</div><p class="mut">Seçili: '+nm(sd)+' · tohum '+have(CR[sd].s)+' · gübre '+have('gubre')+(CR[sd].l>=4?' · ekerken 1 gübre ister':'')+'</p><div class="grid">'+S.plots.map((p,i)=>{if(!p)return '<button class="p" data-a="pl" data-i="'+i+'" aria-label="Boş tarla">🟫</button>';const c=CR[p.s],pr=Math.min(1,(Date.now()-p.at)/(c.t*1000));return pr>=1?'<button class="p ready" data-a="pl" data-i="'+i+'">'+em(p.s)+'</button>':'<button class="p" data-a="pl" data-i="'+i+'">🌱<span class="b"><i style="width:'+Math.round(pr*100)+'%"></i></span>'+(p.g?'<span class="d">🧪</span>':'')+'</button>'}).join('')+'</div><p class="mut">Boş tarlaya dokun: ek. Büyüyene dokun: gübre ile hızlandır. Hazır olana dokun: biç.</p>'+(L>=3?'<button class="btn big" data-a="mt">⚡ Hepsini ek / hasat et</button>':'<p class="mut">🔒 Toplu iş Sv 3\'te açılır.</p>');
- if(S.pf==='hayvan')return '<div class="grid">'+S.an.map((a,i)=>{if(!a)return '<button class="p" data-a="none" disabled>➕</button>';const t=AN[a.k],rd=a.f>0&&Date.now()-a.at>=t.t*1000;return '<button class="p'+(rd?' ready':'')+'" data-a="an" data-i="'+i+'">'+t.e+(a.f>0?(rd?'<span class="d">'+em(t.o)+'</span>':'<span class="b"><i style="width:'+Math.round(Math.min(1,(Date.now()-a.at)/(t.t*1000))*100)+'%"></i></span>'):'<span class="d">🍽️</span>')+'</button>'}).join('')+'</div><p class="mut">🍽️ aç: dokununca yem verirsin ('+have('yem')+' yem var). Hazır olana dokununca toplarsın. Yeni hayvanlar Marketten.</p>'+(L>=3?'<button class="btn big" data-a="ma">⚡ Hepsini besle / topla</button>':'<p class="mut">🔒 Toplu iş Sv 3\'te açılır.</p>');
+const work=()=>qc()+work0();
+function work0(){const L=lv();
+ if(S.pf==='tarim')return '<div class="seeds">'+Object.keys(CR).map(k=>{const c=CR[k],lk=c.l>L;return '<button class="t" data-a="sd" data-k="'+k+'"'+(lk?' disabled':'')+' aria-pressed="'+(sd===k)+'">'+(lk?'🔒'+c.l:em(k)+have(c.s))+'</button>'}).join('')+'</div><p class="mut">Seçili: '+nm(sd)+' · tohum '+have(CR[sd].s)+' · gübre '+have('gubre')+(CR[sd].l>=4?' · ekerken 1 gübre ister':'')+'</p><div class="grid">'+S.plots.map((p,i)=>{if(!p)return '<button class="p" data-a="pl" data-i="'+i+'" aria-label="Boş tarla">🟫</button>';const c=CR[p.s],pr=Math.min(1,(Date.now()-p.at)/(c.t*1000));return pr>=1?'<button class="p ready" data-a="pl" data-i="'+i+'">'+em(p.s)+'</button>':'<button class="p" data-a="pl" data-i="'+i+'">🌱<span class="b"><i style="width:'+Math.round(pr*100)+'%"></i></span>'+(p.g?'<span class="d">🧪</span>':'')+'</button>'}).join('')+'</div><p class="mut">Boş tarlaya dokun: ek. Büyüyene dokun: gübre ile hızlandır. Hazır olana dokun: biç.</p>'+(L>=2?'<button class="btn big" data-a="mt">⚡ Hepsini ek / hasat et</button>':'<p class="mut">🔒 Toplu iş Sv 2\'de açılır.</p>');
+ if(S.pf==='hayvan')return '<div class="grid">'+S.an.map((a,i)=>{if(!a)return '<button class="p" data-a="none" disabled>➕</button>';const t=AN[a.k],rd=a.f>0&&Date.now()-a.at>=t.t*1000;return '<button class="p'+(rd?' ready':'')+'" data-a="an" data-i="'+i+'">'+t.e+(a.f>0?(rd?'<span class="d">'+em(t.o)+'</span>':'<span class="b"><i style="width:'+Math.round(Math.min(1,(Date.now()-a.at)/(t.t*1000))*100)+'%"></i></span>'):'<span class="d">🍽️</span>')+'</button>'}).join('')+'</div><p class="mut">🍽️ aç: dokununca yem verirsin ('+have('yem')+' yem var). Hazır olana dokununca toplarsın. Yeni hayvanlar Marketten.</p>'+(L>=2?'<button class="btn big" data-a="ma">⚡ Hepsini besle / topla</button>':'<p class="mut">🔒 Toplu iş Sv 2\'de açılır.</p>');
  return '<div class="card"><h2>🏭 Tarifler</h2>'+RC.map((r,i)=>{const lk=r[3]>L;return '<div class="row'+(lk?' lk':'')+'"><span>'+r[1]+' <b>'+r[2]+'</b> ×'+r[4]+' <span class="mut">'+(lk?'🔒 Sv '+r[3]:'← '+Object.keys(r[5]).map(k=>r[5][k]+em(k)+' ('+have(k)+')').join(' '))+'</span></span><button class="btn" data-a="cr" data-i="'+i+'"'+(lk||lack(r)?' disabled':'')+'>Üret</button></div>'}).join('')+'</div><p class="mut">Malzemeyi Pazardan, müşteri takaslarından ya da Marketten al.</p>'}
 function stall(){const ks=Object.keys(S.inv),p=PF[S.pf];
  const shelf=ks.map(k=>'<button class="it'+(sel===k?' on':'')+'" data-a="sel" data-k="'+k+'" aria-label="'+nm(k)+'">'+em(k).repeat(Math.min(S.inv[k],14))+(S.inv[k]>14?'<small>+</small>':'')+'</button>').join('')||'<p class="mut">Tezgahın boş. Üretince ürünler burada dizilir.</p>';
  const f=sel&&have(sel)?'<div class="card"><h2>'+em(sel)+' '+nm(sel)+' ('+have(sel)+' adet)</h2><div class="f"><input id="lq" type="number" min="1" max="'+have(sel)+'" value="'+have(sel)+'" aria-label="Adet"><input id="lp" type="number" min="1" max="9999" value="'+I[sel][2]+'" aria-label="Birim fiyat"><button class="btn" data-a="list">Pazara koy</button></div><p class="mut">Adil fiyat ≈ '+I[sel][2]+' 🪙/adet · Satıştan %20 vergi kesilir.</p></div>':'<p class="mut">Satmak için tezgahtaki ürüne dokun.</p>';
  return '<div class="stall" style="--c:'+p[2]+'"><div class="awn"></div><div class="sign">'+p[0]+' '+p[1]+' Tezgâhı · '+esc(S.name)+'</div><div class="shelf">'+shelf+'</div><div class="ctr"></div></div>'+f}
-function cust(){const w=Math.max(0,Math.ceil((S.cn+CUT-Date.now())/1000));return '<div class="card"><h2>👥 Müşteriler ('+S.cu.length+'/10)</h2><p class="mut">'+(S.cu.length>=10?'Kuyruk dolu.':'Sonraki müşteri: '+w+' sn')+' · Aradığın ürün sende yoksa Pazardan al.</p>'+(S.cu.map((c,i)=>'<div class="row"><span>'+c.a+' '+(c.g?'<b>Takas:</b> '+em(c.g[0])+' '+nm(c.g[0])+' ×'+c.g[1]+' verir, karşılığında '+em(c.w[0])+' '+nm(c.w[0])+' ×'+c.w[1]+' ister':em(c.w[0])+' '+nm(c.w[0])+' ×'+c.w[1]+' ister · <b>'+c.r+' 🪙</b>')+' <span class="mut">(sende '+have(c.w[0])+') · +'+c.x+' xp</span></span><span class="f"><button class="btn" data-a="cy" data-i="'+i+'"'+(have(c.w[0])<c.w[1]?' disabled':'')+'>'+(c.g?'Takas et':'Sat')+'</button><button class="btn" data-a="cn" data-i="'+i+'" aria-label="Reddet">✖</button></span></div>').join('')||'<p class="mut">Müşteri bekleniyor…</p>')+'</div>'}
+const cheap=k=>PZ.filter(d=>d.crop===k&&d.seller!==uid).sort((a,b)=>a.price-b.price)[0];
+const wl=c=>c.w.map(([k,q])=>em(k).repeat(Math.min(q,5))+' '+nm(k)+' ×'+q+' <span class="mut">('+have(k)+')</span>').join(', ');
+function cust(){const n=Date.now(),w=Math.max(0,Math.ceil((S.cn+CUT-n)/1000));return vcard()+'<div class="card"><h2>👥 Müşteriler ('+S.cu.length+'/10)</h2><p class="mut">'+(S.cu.length>=10?'Kuyruk dolu.':'Sonraki müşteri: '+w+' sn')+' · Her dakika yeni müşteri gelir, 5-8 dk bekler. 🔥 Seri: '+S.sr.n+' gün</p>'+(S.cu.map((c,i)=>{const miss=c.w.filter(([k,q])=>have(k)<q);return '<div class="row"><span>'+c.a+' '+(c.g?'<b>Takas:</b> '+em(c.g[0])+' '+nm(c.g[0])+' ×'+c.g[1]+' verir ↔ ':'')+'ister: '+wl(c)+(c.g?'':' · <b>'+c.r+' 🪙</b>'+(c.o?' ⭐':''))+' <span class="mut">· +'+c.x+' xp · '+Math.max(1,Math.ceil((c.e-n)/6e4))+' dk</span></span><span class="f"><button class="btn" data-a="cy" data-i="'+i+'"'+(miss.length?' disabled':'')+'>'+(c.g?'Takas et':'Sat')+'</button><button class="btn" data-a="cn" data-i="'+i+'" aria-label="Reddet">✖</button>'+miss.map(([k])=>{const l=cheap(k);return l?'<button class="btn" data-a="bl" data-id="'+l.id+'">'+em(k)+' '+l.price*l.qty+'🪙 ('+l.qty+')</button>':NP[k]&&npLeft(k)>0?'<button class="btn" data-a="nb" data-k="'+k+'">'+em(k)+' '+npPrice(k)+'🪙</button>':''}).join('')+'</span></div>'}).join('')||'<p class="mut">Müşteri bekleniyor…</p>')+'</div>'}
 const left1=(k,cd)=>{const r=(S.mk[k]||0)+cd-Date.now();return r>0?Math.ceil(r/6e4):0};
 function mrows(){const r=[],L=lv(),pr=(k,q)=>Math.ceil(I[k][2]*q*2.2);
  if(S.pf==='tarim')Object.keys(CR).forEach(k=>r.push([CR[k].s,5,CR[k].l,I[CR[k].s][2]*5,0]));
@@ -97,18 +122,19 @@ function mrows(){const r=[],L=lv(),pr=(k,q)=>Math.ceil(I[k][2]*q*2.2);
  if(S.pf==='market'){const s=new Set();RC.filter(x=>x[3]<=L).forEach(x=>Object.keys(x[5]).forEach(k=>I[k][4]!=='market'&&s.add(k)));s.forEach(k=>r.push([k,3,0,pr(k,3),HOUR/2]))}
  else r.push(['yem',3,0,pr('yem',3),HOUR/2],['gubre',2,0,pr('gubre',2),HOUR/2]);return r}
 function market(){const L=lv();return '<div class="card"><h2>🏪 Market</h2><p class="mut">Seviyene göre açılır. Yem, gübre ve hammadde pahalıdır, saatte bir kez alınır; Pazar ve takas daha ucuz.</p>'+mrows().map((m,i)=>{const lk=m[2]>L,w=m[4]?left1(m[0],m[4]):0;return '<div class="row'+(lk?' lk':'')+'"><span>'+em(m[0]).repeat(Math.min(m[1],5))+' <b>'+nm(m[0])+'</b>'+(m[1]>1?' ×'+m[1]:'')+(lk?' <span class="mut">🔒 Sv '+m[2]+'</span>':'')+'</span><button class="btn" data-a="bm" data-i="'+i+'"'+(lk||w||S.coins<m[3]?' disabled':'')+'>'+(w?'⏳ '+w+' dk':m[3]+' 🪙')+'</button></div>'}).join('')+'</div>'}
-function pazar(){return '<div class="card"><h2>🛍️ Pazar</h2><p class="mut">Serbest piyasa. Satıcı her satıştan %20 vergi öder. Adil fiyatları tezgahta görürsün.</p><div id="pl">Yükleniyor…</div></div>'}
+function pazar(){return '<div class="card"><h2>🧑‍🌾 Köy esnafı</h2><p class="mut">Her saat yenilenen sınırlı stok. Oyuncu ilanları genelde daha ucuzdur.</p>'+Object.keys(NP).map(k=>{const l=npLeft(k);return '<div class="row"><span>'+em(k)+' <b>'+nm(k)+'</b> <span class="mut">'+l+' kaldı</span></span><button class="btn" data-a="nb" data-k="'+k+'"'+(!l||S.coins<npPrice(k)?' disabled':'')+'>'+npPrice(k)+' 🪙</button></div>'}).join('')+'</div><div class="card"><h2>🛍️ Pazar</h2><p class="mut">Serbest piyasa. Satıcı her satıştan %20 vergi öder. Adil fiyatları tezgahta görürsün.</p><div id="pl">Yükleniyor…</div></div>'}
 async function loadPz(){const qs=await getDocs(query(collection(db,'listings'),where('sold','==',false),limit(40)));
- const ls=qs.docs.map(d=>({id:d.id,...d.data()})).filter(d=>I[d.crop]).sort((a,b)=>b.createdAt-a.createdAt);
+ const ls=qs.docs.map(d=>({id:d.id,...d.data()})).filter(d=>I[d.crop]).sort((a,b)=>b.createdAt-a.createdAt);PZ.length=0;PZ.push(...ls);pzAt=Date.now();if(tab==='cust')draw();
  if(tab==='pazar'&&$('pl'))$('pl').innerHTML=ls.map(d=>'<div class="row"><span>'+em(d.crop)+' '+nm(d.crop)+' ×'+d.qty+' <span class="mut">'+d.price+' 🪙/adet (adil '+I[d.crop][2]+') · '+esc(d.name)+'</span></span>'+(d.seller===uid?'<button class="btn" data-a="cx" data-id="'+d.id+'">İptal</button>':'<button class="btn" data-a="bl" data-id="'+d.id+'"'+(S.coins<d.price*d.qty?' disabled':'')+'>Al '+d.price*d.qty+' 🪙</button>')+'</div>').join('')||'<p class="mut">İlan yok. İlk ilanı tezgahından ver.</p>'}
 function draw(){
  $('bar').innerHTML='<span>'+(S.pf?PF[S.pf][0]+' ':'')+esc(S.name)+(S.pf?' · Sv '+lv()+' <small class="mut">'+S.xp+'/'+lv()**2*25+'</small>':'')+'</span><b>🪙 '+fmt(S.coins)+'</b><button class="btn" data-a="out">Çıkış</button>';
  $('tabs').hidden=!S.pf;
  if(!S.pf){$('v').innerHTML='<div class="card"><h2>Mesleğini seç</h2>'+Object.keys(PF).map(k=>'<div class="row"><span>'+PF[k][0]+' <b>'+PF[k][1]+'</b><br><span class="mut">'+PF[k][3]+'</span></span><button class="btn" data-a="pf" data-k="'+k+'">Seç</button></div>').join('')+'</div>';return}
- $('cb').textContent=S.cu.length||'';
+ $('cb').textContent=S.cu.length||'';$('wb').textContent=readyN()||'';
  document.querySelectorAll('#tabs .t').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===tab));
  $('v').innerHTML=tab==='work'?work():tab==='stall'?stall():tab==='cust'?cust():tab==='pazar'?pazar():market();
- if(tab==='pazar')loadPz().catch(()=>{});
+ if(tab==='pazar'||(tab==='cust'&&Date.now()-pzAt>15000)){pzAt=Date.now();loadPz().catch(()=>{})}
+ if(tab==='cust'&&Date.now()-vwAt>15000){vwAt=Date.now();loadVW().catch(()=>{})}
 }
 /* ---- eylemler ---- */
 async function collect(){const qs=await getDocs(query(collection(db,'listings'),where('seller','==',uid),where('sold','==',true)));
@@ -121,21 +147,30 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-a]')
  else if(a==='pf'&&!S.pf){const s=START[d.k];S.pf=d.k;S.cn=Date.now();S.coins+=s.coins;for(const k in s.inv)add(k,s.inv[k]);if(s.an)S.an[0]={k:s.an,at:Date.now(),f:0};say(PF[d.k][1]+' oldun!')}
  else if(a==='sd')sd=d.k;
  else if(a==='pl'){const p=S.plots[i];if(!p)plant(i);else if(sdone(p))harvest(i);else if(!p.g&&have('gubre')){add('gubre',-1);p.g=1;p.at-=(CR[p.s].t*1000-(Date.now()-p.at))/2}else say('Henüz büyüyor.')}
- else if(a==='mt'&&lv()>=3){let n=0;S.plots.forEach((p,j)=>{if(p&&sdone(p)){harvest(j);n++}});const c=CR[sd];S.plots.forEach((p,j)=>{if(!p&&c.l<=lv()&&have(c.s)&&(c.l<4||have('gubre'))){plant(j);n++}});say(n?'Toplu iş bitti.':'Yapılacak iş yok.',!n)}
+ else if(a==='mt'&&lv()>=2){let n=0;S.plots.forEach((p,j)=>{if(p&&sdone(p)){harvest(j);n++}});const c=CR[sd];S.plots.forEach((p,j)=>{if(!p&&c.l<=lv()&&have(c.s)&&(c.l<4||have('gubre'))){plant(j);n++}});say(n?'Toplu iş bitti.':'Yapılacak iş yok.',!n)}
  else if(a==='an'){const x=S.an[i];if(!feedCollect(x))say(have('yem')||x.f>0?'Henüz üretmedi.':'Yemin yok. Marketçiden ya da Marketten al.',1)}
- else if(a==='ma'&&lv()>=3){const n=S.an.reduce((s,x)=>s+(x?feedCollect(x):0),0);say(n?'Toplu iş bitti.':'Yapılacak iş yok.',!n)}
+ else if(a==='ma'&&lv()>=2){const n=S.an.reduce((s,x)=>s+(x?feedCollect(x):0),0);say(n?'Toplu iş bitti.':'Yapılacak iş yok.',!n)}
  else if(a==='cr'){const r=RC[i];if(r[3]>lv()||lack(r))return;for(const k in r[5])add(k,-r[5][k]);add(r[0],r[4]);gx(I[r[0]][2]*r[4]/4);say(r[2]+' üretildi.')}
  else if(a==='sel')sel=d.k;
  else if(a==='bm'){const m=mrows()[i];if(m[2]>lv()||(m[4]&&left1(m[0],m[4]))||S.coins<m[3])return;if(AN[m[0]]){const s=S.an.findIndex(x=>!x);if(s<0)return say('Boş yerin yok.',1);S.an[s]={k:m[0],at:Date.now(),f:0}}else add(m[0],m[1]);S.coins-=m[3];if(m[4])S.mk[m[0]]=Date.now();say(nm(m[0])+' alındı.')}
- else if(a==='cy'){const c=S.cu[i];if(!c||have(c.w[0])<c.w[1])return say('Yeterli ürünün yok.',1);add(c.w[0],-c.w[1]);if(c.g){add(c.g[0],c.g[1]);say('Takas yapıldı: +'+c.g[1]+' '+nm(c.g[0]))}else{S.coins+=c.r;say('Satış: +'+c.r+' 🪙')}gx(c.x);S.cu.splice(i,1)}
+ else if(a==='cy'){const c=S.cu[i];if(!c||!c.w.every(([k,q])=>have(k)>=q))return say('Yeterli ürünün yok.',1);c.w.forEach(([k,q])=>add(k,-q));if(c.g){add(c.g[0],c.g[1]);say('Takas yapıldı: +'+c.g[1]+' '+nm(c.g[0]))}else{S.coins+=c.r;say('Satış: +'+c.r+' 🪙')}gx(c.x);S.st.c++;const dy=Math.floor(Date.now()/864e5);if(S.sr.d!==dy){S.sr.n=S.sr.d===dy-1?S.sr.n+1:1;S.sr.d=dy;const bn=Math.min(S.sr.n,7)*10;S.coins+=bn;say('🔥 '+S.sr.n+'. gün serisi: +'+bn+' 🪙')}S.cu.splice(i,1)}
+ else if(a==='nb'){const k=d.k;if(!NP[k]||npLeft(k)<=0||S.coins<npPrice(k))return;S.np.s[k]=(S.np.s[k]||0)+1;S.coins-=npPrice(k);add(k,1);say(nm(k)+' alındı.')}
  else if(a==='cn')S.cu.splice(i,1);
+ else if(a==='vg'){const k=d.k,O=vOrder(wk()),need=(O.find(x=>x[0]===k)||[0,0])[1],ref=doc(db,'village','w'+wk());
+  const g=await runTransaction(db,async tx=>{const s=await tx.get(ref),v=s.exists()?s.data():{done:{},by:{},n:0},dn={...(v.done||{})},by={...(v.by||{})},x=Math.min(have(k),need-(dn[k]||0),60);if(x<=0)throw 0;dn[k]=(dn[k]||0)+x;by[uid]=(by[uid]||0)+x;tx.set(ref,{done:dn,by,n:(v.n||0)+x});return x});
+  add(k,-g);gx(I[k][2]*g/8);say('Köye '+g+' '+nm(k)+' verdin.');await loadVW()}
+ else if(a==='vc'){const w=wk();if(S.vw.w===w&&S.vw.c)return;const O=vOrder(w),s=await getDoc(doc(db,'village','w'+w)),v=s.exists()?s.data():null;
+  if(!v||!O.every(([k,q])=>((v.done||{})[k]||0)>=q))return say('Sipariş henüz tamamlanmadı.',1);
+  if(!(v.by||{})[uid])return say('Önce katkı vermelisin.',1);
+  const r=vRw(O);S.coins+=r;S.vw={w,c:1};say('🏘️ Köy siparişi ödülü: +'+r+' 🪙')}
  else if(a==='list'){const k=sel,q=Math.floor(+$('lq').value),p=Math.floor(+$('lp').value);if(!k||!(q>=1&&q<=have(k)&&p>=1&&p<=9999))return say('Adet ve fiyat geçersiz.',1);
-  await addDoc(collection(db,'listings'),{seller:uid,name:S.name,crop:k,qty:q,price:p,sold:false,createdAt:Date.now()});add(k,-q);say('İlan verildi.')}
- else if(a==='bl'){const ref=doc(db,'listings',d.id);const x=await runTransaction(db,async tx=>{const s=await tx.get(ref);if(!s.exists()||s.data().sold)throw 0;tx.update(ref,{sold:true,buyer:uid});return s.data()});
+  await addDoc(collection(db,'listings'),{seller:uid,name:S.name,crop:k,qty:q,price:p,sold:false,createdAt:Date.now()});add(k,-q);S.st.l++;say('İlan verildi.')}
+ else if(a==='bl'){const z=PZ.find(y=>y.id===d.id);if(z&&S.coins<z.price*z.qty)return say('Paran yetmedi.',1);const ref=doc(db,'listings',d.id);const x=await runTransaction(db,async tx=>{const s=await tx.get(ref);if(!s.exists()||s.data().sold)throw 0;tx.update(ref,{sold:true,buyer:uid});return s.data()});
   if(S.coins<x.price*x.qty)return say('Paran yetmedi.',1);S.coins-=x.price*x.qty;add(x.crop,x.qty);say(x.qty+' '+nm(x.crop)+' aldın.')}
  else if(a==='cx'){const ref=doc(db,'listings',d.id);const x=await runTransaction(db,async tx=>{const s=await tx.get(ref);if(!s.exists()||s.data().sold)throw 0;tx.delete(ref);return s.data()});add(x.crop,x.qty);say('İlan iptal edildi.')}
- }catch(err){say('İşlem tamamlanamadı. İlan satılmış olabilir.',1)}
+ }catch(err){say('İşlem tamamlanamadı. Tekrar dene (ilan satılmış ya da sipariş dolmuş olabilir).',1)}
  if(S.pf&&lv()>l0)say('🎉 Seviye '+lv()+'! Yeni ürünler / tarifler açıldı.');
+ while(S.pf&&S.q<QS.length&&QS[S.q][1]()){S.coins+=QS[S.q][2];say('🎯 Görev tamam: +'+QS[S.q][2]+' 🪙');S.q++}
  save();draw()});
 
 const errs={'auth/invalid-credential':'Kullanıcı adı veya şifre hatalı.','auth/email-already-in-use':'Bu kullanıcı adı alınmış.','auth/weak-password':'Şifre en az 6 karakter olmalı.','auth/invalid-email':'Geçersiz kullanıcı adı.','auth/missing-password':'Şifre gir.','auth/too-many-requests':'Çok fazla deneme, biraz bekle.','auth/network-request-failed':'Bağlantı yok.'};
@@ -172,11 +207,11 @@ onAuthStateChanged(auth,async u=>{
  if(!s.exists()){let n=pend||'Oyuncu';
   try{await setDoc(doc(db,'names',nk(n)),{uid})}catch(e1){n=n.slice(0,13)+Math.floor(Math.random()*900+100);try{await setDoc(doc(db,'names',nk(n)),{uid})}catch(e2){}}
   await setDoc(r,{name:n,coins:50,xp:0,inv:{},plots:Array(8).fill(null),pf:null});s=await getDoc(r)}
- S=s.data();S.inv=Object.fromEntries(Object.entries(S.inv||{}).filter(([k,v])=>I[k]&&v>0));S.mk=S.mk||{};S.xp=S.xp||0;S.cu=Array.isArray(S.cu)?S.cu:[];S.cn=S.cn||Date.now();S.an=Array.from({length:8},(_,i)=>(S.an||[])[i]).map(a=>a&&AN[a.k]?a:null);S.plots=Array.from({length:8},(_,i)=>(S.plots||[])[i]).map(p=>p&&p.s&&CR[p.s]?p:null);if(!PF[S.pf])S.pf=null;
+ S=s.data();S.inv=Object.fromEntries(Object.entries(S.inv||{}).filter(([k,v])=>I[k]&&v>0));S.mk=S.mk||{};S.xp=S.xp||0;S.cu=(Array.isArray(S.cu)?S.cu:[]).filter(c=>c&&Array.isArray(c.w)&&Array.isArray(c.w[0])&&c.e);S.q=S.q||0;S.st=S.st||{c:0,l:0};S.sr=S.sr||{d:0,n:0};S.np=S.np||{h:0,s:{}};S.vw=S.vw&&S.vw.w===wk()?S.vw:{w:wk(),c:0};VW=null;vwAt=0;S.cn=S.cn||Date.now();S.an=Array.from({length:8},(_,i)=>(S.an||[])[i]).map(a=>a&&AN[a.k]?a:null);S.plots=Array.from({length:8},(_,i)=>(S.plots||[])[i]).map(p=>p&&p.s&&CR[p.s]?p:null);if(!PF[S.pf])S.pf=null;
  tab='work';await collect().catch(()=>{});draw()});
 setInterval(()=>{if(S&&dirty){dirty=false;setDoc(doc(db,'users',uid),S).catch(()=>{dirty=true})}},4000);
 setInterval(()=>{if(S)collect().catch(()=>{})},30000);
-setInterval(()=>{if(!S||!S.pf)return;const n=Date.now();if(S.cu.length>=10)S.cn=n;else{let k=Math.min(Math.floor((n-S.cn)/CUT),10-S.cu.length);if(k>0){while(k--)S.cu.push(newCust());S.cn=S.cu.length>=10?n:S.cn+0;S.cn=S.cu.length>=10?n:n;save()}}$('cb').textContent=S.cu.length||'';if(tab==='cust'||(tab==='work'&&S.pf!=='market'))draw()},1000);
+setInterval(()=>{if(!S||!S.pf)return;const n=Date.now(),c0=S.cu.length;S.cu=S.cu.filter(c=>c.e>n);let ch=S.cu.length!==c0;if(S.cu.length>=10)S.cn=n;else{let k=Math.min(Math.floor((n-S.cn)/CUT),10-S.cu.length),k0=k;if(k>0){while(k--)S.cu.push(newCust());S.cn=S.cu.length>=10?n:S.cn+k0*CUT;ch=true}}if(ch)save();$('cb').textContent=S.cu.length||'';$('wb').textContent=readyN()||'';if(tab==='cust'||(tab==='work'&&S.pf!=='market'))draw()},1000);
 document.addEventListener('visibilitychange',()=>{if(S&&dirty&&document.hidden){dirty=false;setDoc(doc(db,'users',uid),S)}});
 
 </script></body></html>
