@@ -35,51 +35,76 @@ input{font:inherit;padding:8px;border:2px solid var(--line);border-radius:10px;b
 .night .grid{filter:brightness(.72)}
 select{font:inherit;padding:8px;border:2px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
 @media(prefers-reduced-motion:reduce){.fl{animation:none}}
+body{padding-bottom:88px}
+summary{cursor:pointer;font-weight:600;font-size:16px;list-style:none}summary::-webkit-details-marker{display:none}
+summary::before{content:'▸ ';color:var(--mut)}details[open]>summary::before{content:'▾ '}
+details.card>div{margin-top:8px}details.g{border-top:1px solid var(--line);padding:8px 0}details.g:first-child{border:0}
+.msg{position:sticky;top:6px;z-index:7;background:var(--panel);border:2px solid var(--line);border-radius:10px;padding:6px 10px;min-height:0}.msg:empty{display:none}
+.tabs{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:680px;z-index:8;margin:0;padding:6px;gap:2px;flex-wrap:nowrap;background:var(--panel);border-top:2px solid var(--line)}
+.tabs .t{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;font-size:11px;border-width:0}.tabs .t span{font-size:20px}
+.seg{display:flex;gap:6px;margin-bottom:10px}.seg .t{flex:1}
+.an{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}.an:last-child{border:0}
+.pen{font-size:24px;min-width:92px;line-height:1.15;word-break:break-all}.ai{flex:1;min-width:0}
+.big{width:100%;margin-top:8px;font-weight:600;padding:12px}
+input[type=checkbox]{width:auto;margin:0 8px 0 0}.chk{display:block;margin:4px 0 10px}a{color:var(--leaf)}
 </style>
 </head>
 <body>
 <h1>🌱 Minik Bahçe Diyarı</h1>
 
-<div id="auth" class="card">
-  <h2>Giriş yap ya da hesap oluştur</h2>
-  <input id="em" type="email" placeholder="E-posta" autocomplete="email">
-  <input id="pw" type="password" placeholder="Şifre (en az 6 karakter)" autocomplete="current-password">
-  <input id="nm" placeholder="Takma ad (sadece kayıt için, 3-16 karakter)" maxlength="16">
-  <div class="f"><button class="btn" id="login">Giriş yap</button><button class="btn" id="reg">Hesap oluştur</button><button class="btn" id="rst">Şifremi unuttum</button></div>
+<form id="auth" class="card" autocomplete="on">
+  <h2 id="at">Giriş yap</h2>
+  <input id="em" name="username" placeholder="Kullanıcı adı" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="40" required>
+  <input id="pw" name="password" type="password" placeholder="Şifre (en az 6 karakter)" autocomplete="current-password" required>
+  <label class="chk"><input type="checkbox" id="rm" checked>Beni hatırla</label>
+  <button class="btn big" id="go" type="submit">Giriş yap</button>
+  <p class="mut"><a href="#" id="sw">Hesabın yok mu? Kayıt ol</a> <a href="#" id="rst" hidden>· Şifremi sıfırla</a></p>
   <p id="aerr" role="alert"></p>
-</div>
+</form>
 
 <div id="app" hidden>
   <div class="card bar" id="bar"></div>
-  <div class="tabs" id="tabs">
-    <button class="t" data-v="garden">🌾 Bahçe</button>
-    <button class="t" data-v="market">🛒 Pazar</button>
-    <button class="t" data-v="top">🏆 Sıralama</button>
-    <button class="t" data-v="guild">🏰 Lonca</button>
-    <button class="t" data-v="chat">💬 Sohbet</button>
-  </div>
   <p class="msg" id="msg" role="status"></p>
+  <div id="pfc"></div>
   <section id="v-garden">
-    <div id="pfc"></div><div id="tut"></div><div id="deco" style="font-size:22px;min-height:8px"></div>
+    <div id="tut"></div><div id="deco" style="font-size:22px;min-height:8px"></div>
     <div class="grid" id="grid"></div>
     <div class="tools" id="tools"></div>
     <div id="mo"></div>
-    <div class="card"><h2>Dükkan</h2><div id="shop"></div></div><div class="card"><h2>🐔 Çiftlik</h2><div id="farm"></div></div><div class="card"><h2>🏭 Atölye</h2><div id="fab"></div></div>
-    <div class="card"><h2>🏅 Rozetler</h2><div id="bd" class="mut"></div></div><div class="card"><h2>🔔 Son olaylar</h2><div id="lg" class="mut"></div></div><div class="card"><h2>👤 Hesap</h2><div class="f"><button class="btn" data-pfchg="1">🔁 Meslek değiştir</button><button class="btn" data-card="1">📸 Bahçe kartı indir</button><button class="btn" data-out="1">Çıkış yap</button></div></div>
   </section>
-  <section id="v-market" hidden><div class="card"><h2>🏛️ Hal piyasası</h2><div id="hal"></div></div><div class="card"><h2>📜 Vadeli sözleşme</h2><div id="fc"></div></div><div class="card"><h2>🧳 Gezgin tüccar</h2><div id="wm"></div></div>
-    <div class="card"><h2>📦 Müşteri siparişleri</h2><div id="ordl"></div></div>
-    <div class="card"><div id="mk-inv"></div></div>
-    <div class="card"><h2>Oyuncu pazarı</h2><div id="mk-list"></div></div>
+  <section id="v-barn" hidden><div id="farm"></div></section>
+  <section id="v-work" hidden><div class="card"><h2>🏭 Atölye</h2><div id="fab"></div></div></section>
+  <section id="v-market" hidden>
+    <details class="card" open><summary>📦 Siparişler</summary><div id="ordl"></div></details>
+    <details class="card" open><summary>🎒 Deponun ve satış</summary><div id="mk-inv"></div></details>
+    <details class="card"><summary>🛍️ Oyuncu pazarı</summary><div id="mk-list"></div></details>
+    <details class="card"><summary>🏛️ Hal piyasası</summary><div id="hal"></div></details>
+    <details class="card"><summary>🧳 Gezgin tüccar</summary><div id="wm"></div></details>
+    <details class="card"><summary>📜 Vadeli sözleşme</summary><div id="fc"></div></details>
   </section>
+  <div class="seg" id="subtabs" hidden><button class="t" data-v="top">🏆 Sıralama</button><button class="t" data-v="guild">🏰 Lonca</button><button class="t" data-v="chat">💬 Sohbet</button></div>
   <section id="v-top" hidden><div class="card"><h2>🏁 Haftalık hasat yarışı</h2><div id="race"></div></div><div class="card"><h2>En iyi bahçıvanlar</h2><p class="mut">Rakibine köstebek gönder: tarlasını kapatır, kaldırması altına mal olur.</p><div id="tp"></div></div></section>
   <section id="v-guild" hidden><div id="gd"></div></section>
   <section id="v-visit" hidden><div class="card" id="vs"></div></section>
   <section id="v-chat" hidden><div class="card"><h2>Genel sohbet</h2><div id="cl" class="chat"></div><div class="f" style="margin-top:8px"><input id="ci" maxlength="140" placeholder="Mesaj yaz…" style="flex:1;width:auto"><button class="btn" data-chat="1">Gönder</button></div></div></section>
+  <section id="v-menu" hidden>
+    <div class="card"><h2>🏪 Dükkan</h2><div id="shop"></div></div>
+    <details class="card"><summary>🏅 Rozetler</summary><div id="bd" class="mut"></div></details>
+    <details class="card"><summary>🔔 Son olaylar</summary><div id="lg" class="mut"></div></details>
+    <div class="card"><h2>👤 Hesap</h2><div class="f"><button class="btn" data-pfchg="1">🔁 Meslek değiştir</button><button class="btn" data-card="1">📸 Bahçe kartı indir</button><button class="btn" data-out="1">Çıkış yap</button></div></div>
+  </section>
+  <nav class="tabs" id="tabs">
+    <button class="t" data-v="garden"><span>🌾</span>Bahçe</button>
+    <button class="t" id="t-barn" data-v="barn"><span>🐄</span>Ahır</button>
+    <button class="t" data-v="work"><span>🏭</span>Atölye</button>
+    <button class="t" data-v="market"><span>🛒</span>Pazar</button>
+    <button class="t" data-v="top"><span>👥</span>Topluluk</button>
+    <button class="t" data-v="menu"><span>☰</span>Menü</button>
+  </nav>
 </div>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,onAuthStateChanged,sendPasswordResetEmail} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,onAuthStateChanged,sendPasswordResetEmail,setPersistence,browserLocalPersistence,browserSessionPersistence} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {getFirestore,doc,getDoc,setDoc,collection,query,orderBy,limit,getDocs,addDoc,where,deleteDoc,runTransaction,onSnapshot} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 const firebaseConfig = {
   apiKey: "AIzaSyB91qaXPfss8qloRDsUV8snNIaA8CXf_b4",
@@ -135,9 +160,13 @@ const extraRows=()=>{const k=S.kv||0,kc=500*(k+1)*(k+1),sc=S.sc>Date.now();
  return '<div class="row"><span>🪣 Altın kova <span class="mut">(seviye '+k+'/5, şanslı hasat +5%)</span></span><button class="btn" data-kv="1"'+(k>=5||S.coins<kc?' disabled':'')+'>'+(k>=5?'En üst':kc+' 🪙')+'</button></div><div class="row"><span>🛡️ Korkuluk <span class="mut">(24 saat köstebek korur)</span></span><button class="btn" data-sc="1"'+(sc||S.coins<400?' disabled':'')+'>'+(sc?'Aktif':'400 🪙')+'</button></div>'};
 function drawFarm(){
  if(!S)return;
- const tot=Object.keys(A).reduce((a,k)=>a+pnd(k),0);
- set('farm',Object.keys(A).filter(k=>A[k].pf===S.pf).map(k=>{const a=A[k],n=S.an[k]||0;return '<div class="row"><span>'+a.e+' '+a.n+' <span class="mut">('+n+'/4 · '+C[a.k].e+' '+pnd(k)+' hazır)</span></span><button class="btn" data-an="'+k+'"'+(n>=4||S.coins<a.p?' disabled':'')+'>'+a.p+' 🪙</button></div>'}).join('')+'<div class="row"><span class="mut">Süreler: 🐔5 dk · 🐄10 dk · 🐟15 dk · 🐝30 dk · 🍎🍊60 dk. Her birimde en çok 8 ürün birikir.</span><button class="btn" data-pen="1"'+(tot?'':' disabled')+'>Topla ('+tot+')</button></div><div class="row"><span class="mut">🌾 Yem: '+(S.fd||0)+' (tavuk, inek, havuz ürün başına 1 yem ister)</span><button class="btn" data-fd="1">5 ürün → 8 yem</button></div>');
+ const mine=Object.keys(A).filter(k=>A[k].pf===S.pf),tt=mine.reduce((a,k)=>a+pnd(k),0);
+ const row=k=>{const a=A[k],n=S.an[k]||0,r=pnd(k);return '<div class="an"><div class="pen" aria-hidden="true">'+(a.e.repeat(n)||'<span class="mut">boş</span>')+'</div><div class="ai"><b>'+a.n+'</b> <span class="mut">'+n+'/4'+(r?' · '+C[a.k].e+' '+r+' hazır':'')+'</span><div class="pb"><i data-pg="'+k+'"></i></div></div><button class="btn" data-an="'+k+'"'+(n>=4||S.coins<a.p?' disabled':'')+'>'+(n>=4?'Dolu':'+1 · '+a.p+' 🪙')+'</button></div>'};
+ const g=ks=>ks.filter(k=>mine.includes(k)).map(row).join(''),an=g(['tavuk','inek','havuz','kovan']),tr=g(['elma','portakal']),oc=g(['ocak']);
+ set('farm','<div class="card">'+(mine.some(k=>A[k].fed)?'<div class="row"><span>🌾 Yem: <b>'+(S.fd||0)+'</b> <span class="mut">(tavuk, inek, havuz: ürün başına 1)</span></span><button class="btn" data-fd="1">5 ürün → 8 yem</button></div>':'')+'<button class="btn big" data-pen="1"'+(tt?'':' disabled')+'>🧺 Hepsini topla ('+tt+')</button></div>'+(an?'<div class="card"><h2>🐾 Hayvanlar</h2>'+an+'</div>':'')+(tr?'<div class="card"><h2>🌳 Meyve ağaçları</h2>'+tr+'</div>':'')+(oc?'<div class="card"><h2>⛏️ Maden</h2>'+oc+'</div>':''));
+ tickBarn();
 }
+function tickBarn(){const el=(Date.now()-S.at)/1000;document.querySelectorAll('[data-pg]').forEach(e=>{const k=e.dataset.pg,n=S.an[k]||0,t=A[k].t;e.style.width=(!n?0:el/t>=8?100:(el%t)/t*100)+'%'})}
 function drawFab(){
  if(!S)return;
  const j=S.job,now=Date.now();let h='';
@@ -211,7 +240,7 @@ const useTool=()=>{if(S.dur>0){S.dur--;return true}if((S.inv.alet||0)>0){S.inv.a
 function drawPf(){
  $('grid').style.display=$('tools').style.display=S.pf==='ciftci'?'':'none';
  if(!S.pf||chg){set('pfc','<div class="card"><h2>'+(S.pf?'Meslek değiştir (1000 🪙, haftada 1)':'Mesleğini seç')+'</h2>'+Object.keys(PF).map(k=>'<div class="row"><span>'+PF[k].e+' <b>'+PF[k].n+'</b><br><span class="mut">'+PF[k].d+'</span></span><button class="btn" data-pf="'+k+'"'+(S.pf===k||(S.pf&&(S.coins<1000||S.pfw===SEASON()))?' disabled':'')+'>Seç</button></div>').join('')+'</div>');return}
- set('pfc','<div class="card"><div class="row"><span>'+PF[S.pf].e+' <b>'+PF[S.pf].n+'</b> <span class="mut">'+PF[S.pf].d+'</span></span></div>'+(S.hun?'<div class="row"><span>🍞 Açsın: verim −%30</span><button class="btn" data-eat="1"'+((S.inv.ekmek||0)>0?'':' disabled')+'>Ekmek ye</button></div>':'')+(S.sick?'<div class="row"><span>🤒 Hastasın: verim −%50</span><button class="btn" data-cure="1"'+((S.inv.ilac||0)>0?'':' disabled')+'>İlaç iç</button></div>':'')+'<p class="mut">🔧 Alet dayanıklılığı: '+(S.dur||0)+(S.pf==='tuccar'?'':' · elinde '+(S.inv.alet||0)+' alet')+'</p></div>')}
+ set('pfc','<div class="mut" style="margin:0 2px 8px">'+PF[S.pf].e+' '+PF[S.pf].n+' · 🔧 '+(S.dur||0)+(S.pf==='tuccar'?'':' (+'+(S.inv.alet||0)+' yedek alet)')+'</div>'+(S.hun?'<div class="card row"><span>🍞 Açsın: verim −%30</span><button class="btn" data-eat="1"'+((S.inv.ekmek||0)>0?'':' disabled')+'>Ekmek ye</button></div>':'')+(S.sick?'<div class="card row"><span>🤒 Hastasın: verim −%50</span><button class="btn" data-cure="1"'+((S.inv.ilac||0)>0?'':' disabled')+'>İlaç iç</button></div>':''))}
 function welcome(){checkAl();const now=Date.now(),r=S.plots.filter(p=>p&&p.c&&C[p.c]&&p.at&&now-p.at>=C[p.c].g*1000).length,a=Object.keys(A).reduce((x,k)=>x+pnd(k),0);if(r||a)say('Sen yokken '+(r?r+' tarla hasada hazır oldu. ':'')+(a?a+' çiftlik ürünü birikti.':''))}
 function fl(i,t){const b=document.querySelector('[data-i="'+i+'"]');if(!b)return;const r=b.getBoundingClientRect(),e=document.createElement('div');e.className='fl';e.textContent=t;e.style.left=r.left+r.width/2+'px';e.style.top=r.top+'px';document.body.appendChild(e);setTimeout(()=>e.remove(),900)}
 
@@ -225,22 +254,39 @@ const mul=k=>mulD(k,dayN());
 const unit=(k,d)=>Math.max(1,Math.round(C[k].p*mulD(k,d===undefined?dayN():d)));
 const npc=k=>unit(k)*(S.inv[k]||0)+Math.round(unit(k)*.25*Math.min(S.sq[k]||0,S.inv[k]||0));
 const save=()=>{dirty=true};
-const say=(t,e)=>{const m=$('msg');m.textContent=t;m.className='msg'+(e?' err':'');if(t){snd(e?200:660);LOG.unshift(new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})+' '+t);LOG.length=Math.min(LOG.length,12);drawLog()}};
+const say=(t,e)=>{const m=$('msg');m.textContent=t;m.className='msg'+(e?' err':'');clearTimeout(say.t);say.t=setTimeout(()=>{m.textContent=''},7000);if(t){snd(e?200:660);LOG.unshift(new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})+' '+t);LOG.length=Math.min(LOG.length,12);drawLog()}};
 const newUser=n=>({name:n||'Bahçıvan',coins:50,xp:0,inv:{},plots:Array(8).fill(null),gnome:false,moles:[],lastMole:0,lastBonus:0,pf:null});
 
 /* ---------- Giriş / kayıt ---------- */
-const errs={'auth/invalid-credential':'E-posta veya şifre hatalı.','auth/email-already-in-use':'Bu e-posta zaten kayıtlı.','auth/weak-password':'Şifre en az 6 karakter olmalı.','auth/invalid-email':'Geçersiz e-posta.','auth/missing-password':'Şifre gir.'};
+const errs={'auth/invalid-credential':'Kullanıcı adı veya şifre hatalı.','auth/email-already-in-use':'Bu kullanıcı adı alınmış.','auth/weak-password':'Şifre en az 6 karakter olmalı.','auth/invalid-email':'Geçersiz kullanıcı adı.','auth/missing-password':'Şifre gir.','auth/too-many-requests':'Çok fazla deneme, biraz bekle.','auth/network-request-failed':'Bağlantı yok.'};
 const aerr=e=>{$('aerr').textContent=errs[e.code]||('Hata: '+e.code)};
-$('login').onclick=()=>signInWithEmailAndPassword(auth,$('em').value,$('pw').value).catch(aerr);
-$('rst').onclick=()=>{const e=$('em').value.trim();if(!e){$('aerr').textContent='Önce e-posta adresini yaz.';return}sendPasswordResetEmail(auth,e).then(()=>{$('aerr').textContent='Şifre sıfırlama e-postası gönderildi (spam klasörüne de bak).'}).catch(aerr)};
-$('reg').onclick=()=>{
- const n=$('nm').value.trim();
- if(n.length<3||n.length>16){$('aerr').textContent='Takma ad 3-16 karakter olmalı.';return}
- getDoc(doc(db,'names',nk(n))).then(x=>{if(x.exists()){$('aerr').textContent='Bu takma ad alınmış, başka bir tane seç.';return}pend=n;createUserWithEmailAndPassword(auth,$('em').value,$('pw').value).catch(aerr)}).catch(aerr);
+const fold=x=>x.trim().toLocaleLowerCase('tr').replace(/ç/g,'c').replace(/ğ/g,'g').replace(/ı/g,'i').replace(/ö/g,'o').replace(/ş/g,'s').replace(/ü/g,'u');
+const UNOK=/^[A-Za-z0-9_çğıöşüÇĞİÖŞÜ]{3,16}$/,LSK='bahce.giris';
+const mail=u=>u.includes('@')?u.trim():fold(u)+'@bahcivan.local';
+const lsGet=()=>{try{return JSON.parse(localStorage.getItem(LSK)||'null')}catch(e){return null}};
+const lsSet=v=>{try{localStorage.setItem(LSK,JSON.stringify(v))}catch(e){}};
+let regMode=false;
+{const r=lsGet();if(r){$('rm').checked=!!r.r;if(r.r)$('em').value=r.u||''}}
+const mode=r=>{regMode=r;$('at').textContent=$('go').textContent=r?'Hesap oluştur':'Giriş yap';$('sw').textContent=r?'Hesabım var, giriş yap':'Hesabın yok mu? Kayıt ol';$('pw').autocomplete=r?'new-password':'current-password';$('aerr').textContent=''};
+$('sw').onclick=e=>{e.preventDefault();mode(!regMode)};
+$('em').oninput=()=>{$('rst').hidden=!$('em').value.includes('@')};
+$('rst').onclick=e=>{e.preventDefault();sendPasswordResetEmail(auth,$('em').value.trim()).then(()=>{$('aerr').textContent='Şifre sıfırlama e-postası gönderildi (spam klasörüne de bak).'}).catch(aerr)};
+$('auth').onsubmit=async e=>{
+ e.preventDefault();const u=$('em').value.trim(),p=$('pw').value,rm=$('rm').checked;$('aerr').textContent='';
+ try{
+  await setPersistence(auth,rm?browserLocalPersistence:browserSessionPersistence);
+  if(regMode){
+   if(!UNOK.test(u)){$('aerr').textContent='Kullanıcı adı 3-16 karakter olmalı; harf, rakam ve _ kullan.';return}
+   const x=await getDoc(doc(db,'names',nk(u)));
+   if(x.exists()){$('aerr').textContent='Bu kullanıcı adı alınmış.';return}
+   pend=u;await createUserWithEmailAndPassword(auth,mail(u),p);
+  }else await signInWithEmailAndPassword(auth,mail(u),p);
+  lsSet({r:rm?1:0,u:rm?u:''});
+ }catch(err){aerr(err)}
 };
 onAuthStateChanged(auth,async u=>{
  $('auth').hidden=!!u;$('app').hidden=!u;
- if(!u){$('pw').value='';uid=null;S=null;if(unChat){unChat();unChat=null}return}
+ if(!u){if(S)$('pw').value='';uid=null;S=null;if(unChat){unChat();unChat=null}return}
  uid=u.uid;const r=doc(db,'users',uid);let s=await getDoc(r);
  if(!s.exists()){
   let n=pend||'Bahçıvan';
@@ -248,9 +294,18 @@ onAuthStateChanged(auth,async u=>{
   await setDoc(r,newUser(n));s=await getDoc(r);
  }
  S=s.data();S.moles=S.moles||[];S.guild=S.guild||null;S.gp=S.gp||0;S.gs=S.gs||0;S.q=S.q||{d:0,c:{},done:{}};S.planter=!!S.planter;S.pcrop=S.pcrop||'havuc';S.lastGR=S.lastGR||0;S.streak=S.streak||0;S.deco=S.deco||{};S.ach=S.ach||{};S.ord=(S.ord||[]).filter(o=>C[o.k]);S.gtS=S.gtS||0;S.gtN=S.gtN||0;S.an=S.an||{};S.at=S.at||Date.now();S.job=S.job||null;S.kv=S.kv||0;S.sc=S.sc||0;S.tut=S.tut||0;S.ch=S.ch||0;S.tm=S.tm||'toprak';S.tmo=S.tmo||{};S.av=S.av||'👤';S.rs=S.rs||{};S.al=S.al||{};S.alD=S.alD||{};S.bulk=S.bulk||null;S.vip=S.vip||null;S.cp=S.cp||0;S.trap=S.trap||0;S.sq=S.sq||{};S.sp=S.sp||{};S.fd=S.fd||0;S.fc=S.fc||null;S.tr=!!S.tr;S.wm=S.wm||{d:0,b:{}};S.wkw=S.wkw||0;S.wkh=S.wkh||0;S.pf=S.pf===undefined?'ciftci':S.pf;if(S.dur===undefined){S.dur=0;if(S.pf)S.inv.alet=(S.inv.alet||0)+3}S.hun=S.hun||0;S.sick=S.sick||0;S.pfw=S.pfw||0;S.th=S.th||0;S.ts=S.ts||0;S.tv=S.tv||0;rollover();S.plots=S.plots.map(p=>p&&p.w?null:p);nextEv=Infinity;
- await collect();await getMoles();rollRp();draw();show('garden');startChat();welcome();
+ await collect();await getMoles();rollRp();draw();show(home());startChat();welcome();
 });
 
+const OPEN={};document.addEventListener('toggle',e=>{const g=e.target.dataset&&e.target.dataset.g;if(g)OPEN[g]=e.target.open},true);
+const hasBarn=()=>Object.values(A).some(a=>a.pf===S.pf);
+const home=()=>!S.pf||S.pf==='ciftci'?'garden':hasBarn()?'barn':'work';
+function drawTabs(){
+ const q=v=>document.querySelector('#tabs [data-v='+v+']'),ci=!S.pf||S.pf==='ciftci';
+ q('garden').hidden=!ci;q('barn').hidden=!hasBarn();q('work').hidden=ci;
+ q('barn').innerHTML=S.pf==='demirci'?'<span>⛏️</span>Ocak':'<span>🐄</span>Ahır';
+ const cur=document.querySelector('#tabs .t[aria-pressed=true]');if(cur&&cur.hidden)show(home());
+}
 /* ---------- Bahçe ---------- */
 function click(i){if(S.pf!=='ciftci')return say('Tarla işleri Çiftçiye ait. Ürünü pazardan alabilirsin.',1);
  const p=S.plots[i];
@@ -285,16 +340,19 @@ function drawGrid(){
 }
 function drawBar(){
  const l=lvl(),lo=(l-1)**2*10,hi=l*l*10;
- $('bar').innerHTML='<span>'+S.av+' '+esc(S.name)+(S.pf&&PF[S.pf]?' '+PF[S.pf].e:'')+'</span><span>🪙 '+S.coins+'</span><span>📦 '+tot()+'/'+cap()+'</span><span>⭐ Seviye '+l+'</span><span class="mut">'+S.xp+' / '+hi+' XP</span><span>'+seas()[0]+' · '+WXE[wx()]+(ev()>1?' 🎉 2× XP':'')+'</span><button class="btn" data-snd="1" aria-label="Ses">'+(mute?'🔇':'🔊')+'</button><button class="btn" data-out="1">Çıkış</button><div class="xp"><i style="width:'+Math.min(100,(S.xp-lo)/(hi-lo)*100)+'%"></i></div>';
+ $('bar').innerHTML='<span>'+S.av+' '+esc(S.name)+(S.pf&&PF[S.pf]?' '+PF[S.pf].e:'')+'</span><span>🪙 '+S.coins+'</span><span>📦 '+tot()+'/'+cap()+'</span><span title="'+S.xp+' / '+hi+' XP">⭐ '+l+'</span><button class="btn" data-snd="1" aria-label="Ses">'+(mute?'🔇':'🔊')+'</button><div class="xp"><i style="width:'+Math.min(100,(S.xp-lo)/(hi-lo)*100)+'%"></i></div><span class="mut" style="flex:1 1 100%;font-size:12px">'+seas()[0]+' · '+WXE[wx()]+(ev()>1?' 🎉 2× XP':'')+' · '+S.xp+'/'+hi+' XP</span>';
 }
 function drawPanels(){
  $('tools').innerHTML='<button class="t" data-tool="water" aria-pressed="'+(tool==='water')+'">💧 Sula</button>'+unlT().map(k=>'<button class="t" data-tool="'+k+'" aria-pressed="'+(tool===k)+'">'+C[k].e+' '+C[k].n+' ('+(C[k].r?(S.rs[k]||0)+' tohum':C[k].s||'bedava')+')</button>').join('');
  const pc=S.plots.length*50-200;
  const bd=Date.now()-(S.lastBonus||0)<864e5;
- $('shop').innerHTML='<div class="row"><span>🎁 Günlük hediye</span><button class="btn" data-bonus="1"'+(bd?' disabled':'')+'>'+(bd?'Yarın tekrar gel':(40+lvl()*10)+' 🪙 al')+'</button></div><div class="row"><span>🟫 Yeni tarlalar (+4, 🟫 kupon ister) <span class="mut">'+S.plots.length+'/20</span></span><button class="btn" data-buy="plot"'+(S.plots.length>=20||S.coins<pc||!(S.inv.tarlakupon>0)?' disabled':'')+'>'+(S.plots.length>=20?'En fazla':pc+' 🪙')+'</button></div>'+
-  '<div class="row"><span>🧙 Sulama cücesi <span class="mut">(Seviye 8)</span></span><button class="btn" data-buy="gnome"'+(S.gnome||lvl()<8||S.coins<WG?' disabled':'')+'>'+(S.gnome?'Satın alındı':WG+' 🪙')+'</button></div>'+planterRows()+decoRows()+extraRows()+extraRows2()+extraRows3()+extraRows4();
+ const bonus='<div class="row"><span>🎁 Günlük hediye</span><button class="btn" data-bonus="1"'+(bd?' disabled':'')+'>'+(bd?'Yarın tekrar gel':(40+lvl()*10)+' 🪙 al')+'</button></div>',
+  plot='<div class="row"><span>🟫 Yeni tarlalar (+4, 🟫 kupon ister) <span class="mut">'+S.plots.length+'/20</span></span><button class="btn" data-buy="plot"'+(S.plots.length>=20||S.coins<pc||!(S.inv.tarlakupon>0)?' disabled':'')+'>'+(S.plots.length>=20?'En fazla':pc+' 🪙')+'</button></div>',
+  gn='<div class="row"><span>🧙 Sulama cücesi <span class="mut">(Seviye 8)</span></span><button class="btn" data-buy="gnome"'+(S.gnome||lvl()<8||S.coins<WG?' disabled':'')+'>'+(S.gnome?'Satın alındı':WG+' 🪙')+'</button></div>',
+  G=(id,t,h)=>'<details class="g" data-g="'+id+'"'+(OPEN[id]?' open':'')+'><summary>'+t+'</summary>'+h+'</details>';
+ $('shop').innerHTML=G('d','🎁 Günlük ve görünüm',bonus+extraRows2())+G('e','🌱 Genişleme ve yardımcılar',plot+gn+planterRows()+extraRows()+extraRows3())+G('s','🌳 Yetenekler ve traktör',extraRows4())+G('c','🌸 Süsler',decoRows());
 }
-function draw(){checkAch();drawBar();drawGrid();drawPanels();drawMoles();drawDeco();drawBadges();drawOrders();drawTut();drawFarm();drawFab();applyTheme();drawPf()}
+function draw(){checkAch();drawBar();drawGrid();drawPanels();drawMoles();drawDeco();drawBadges();drawOrders();drawTut();drawFarm();drawFab();applyTheme();drawPf();drawTabs()}
 
 /* ---------- Pazar ---------- */
 async function collect(){
@@ -318,8 +376,12 @@ async function drawTop(){
  $('tp').innerHTML=qs.docs.map((d,i)=>{const x=d.data();return '<div class="row"><span>'+(i+1)+'. '+(x.av||'👤')+' '+(x.pf&&PF[x.pf]?PF[x.pf].e+' ':'')+esc(x.name)+'</span><span class="mut">Seviye '+(Math.floor(Math.sqrt(x.xp/10))+1)+' · '+x.xp+' XP</span>'+(d.id===uid?'':'<button class="btn" data-visit="'+d.id+'">👁 Ziyaret</button><button class="btn" data-mole="'+d.id+'">🕳️ Gönder ('+MOLE_SEND+' 🪙)</button>')+'</div>'}).join('');
 }
 function show(v){
- ['garden','market','top','chat','guild','visit'].forEach(k=>{$('v-'+k).hidden=k!==v});
- document.querySelectorAll('#tabs .t').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===v));
+ const grp=['top','guild','chat','visit'],mt=grp.includes(v)?'top':v;
+ ['garden','barn','work','market','top','chat','guild','visit','menu'].forEach(k=>{$('v-'+k).hidden=k!==v});
+ $('subtabs').hidden=!grp.includes(v)||v==='visit';
+ document.querySelectorAll('#tabs .t').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===mt));
+ document.querySelectorAll('#subtabs .t').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===v));
+ scrollTo(0,0);
  if(v==='market')drawMarket();if(v==='top')drawTop();if(v==='guild')drawGuild();
 }
 
@@ -560,7 +622,7 @@ setInterval(()=>{if(S&&dirty){dirty=false;setDoc(doc(db,'users',uid),S).catch(()
 setInterval(()=>{if(S)collect().catch(()=>{})},30000);
 setInterval(()=>{if(S)getMoles().catch(()=>{})},20000);
 setInterval(()=>{if(S)rollover()},60000);
-setInterval(()=>{if(S){drawFarm();drawFab()}},2000);
+setInterval(()=>{if(S){drawFarm();drawFab()}},1000);
 setInterval(()=>{if(S){checkAl();rollRp()}},60000);
 document.addEventListener('visibilitychange',()=>{if(S&&dirty&&document.hidden){dirty=false;setDoc(doc(db,'users',uid),S)}});
 
