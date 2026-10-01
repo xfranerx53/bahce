@@ -67,6 +67,11 @@ const START={tarim:{coins:150,inv:{s_havuc:12,s_bugday:6,gubre:2}},hayvan:{coins
 const TAX=.2,HOUR=36e5,CUT=6e4,AV=['👵','👨‍🍳','🧑‍🌾','👩‍🏫','🧔','👧','🧓','👨‍🦰','👩‍🔧','🧑‍🎨'];
 const nm=k=>I[k]?I[k][1]:AN[k].n,em=k=>I[k]?I[k][0]:AN[k].e;
 const save=()=>{dirty=true};
+// Firestore iç içe dizi (w:[[k,q],..]) kabul etmez; kaydederken düzleştir, yüklerken geri çevir.
+const pack=()=>({...S,cu:S.cu.map(c=>({...c,w:c.w.flat()}))});
+const unw=w=>Array.isArray(w[0])?w:w.reduce((a,x,i)=>i%2?a:[...a,[x,w[i+1]]],[]);
+let svErr=0;
+const flush=()=>setDoc(doc(db,'users',uid),pack());
 const beep=()=>{try{const x=beep.c||(beep.c=new AudioContext()),o=x.createOscillator(),g=x.createGain();o.frequency.value=660;g.gain.value=.04;o.connect(g);g.connect(x.destination);o.start();o.stop(x.currentTime+.07)}catch(e){}};
 const say=(t,e)=>{if(!e)beep();const m=$('msg');m.textContent=t;m.className='msg'+(e?' err':'');clearTimeout(say.t);say.t=setTimeout(()=>{m.textContent=''},6000)};
 const add=(k,n)=>{S.inv[k]=(S.inv[k]||0)+n;if(S.inv[k]<=0)delete S.inv[k]};
@@ -175,7 +180,7 @@ async function collect(){const qs=await getDocs(query(collection(db,'listings'),
 document.addEventListener('input',e=>{const t=e.target;if(!t.classList||!t.classList.contains('bq'))return;const mx=+t.max;let n=Math.floor(+t.value)||0;if(n>mx){n=mx;t.value=mx}const b=$(t.dataset.b);if(b){b.textContent='Al '+Math.max(n,0)*(+t.dataset.p)+' 🪙';b.disabled=n<1||S.coins<n*(+t.dataset.p)}});
 document.addEventListener('click',async e=>{const b=e.target.closest('[data-a]');if(!b||!S)return;if(window.Notification&&Notification.permission==='default')Notification.requestPermission();const a=b.dataset.a,d=b.dataset,i=+d.i,l0=S.pf?lv():0;
  try{
- if(a==='out'){if(dirty){dirty=false;await setDoc(doc(db,'users',uid),S)}return signOut(auth)}
+ if(a==='out'){if(dirty){await flush();dirty=false}return signOut(auth)}
  if(a==='tab'){tab=d.v;sel=null}
  else if(a==='pf'&&!S.pf){const s=START[d.k];S.pf=d.k;S.cn=Date.now();S.coins+=s.coins;for(const k in s.inv)add(k,s.inv[k]);if(s.an)S.an[0]={k:s.an,at:Date.now(),f:0};say(PF[d.k][1]+' oldun!')}
  else if(a==='sd')sd=d.k;
@@ -199,7 +204,7 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-a]')
  else if(a==='gs'){const n=$('gn').value.trim(),k=$('gc').value,q=Math.floor(+$('gq').value);if(!n||!k||!(q>=1&&q<=have(k)&&q<=200))return say('Oyuncu adı ve adet geçersiz.',1);const s=await getDoc(doc(db,'names',nk(n)));if(!s.exists()||s.data().uid===uid)return say('Oyuncu bulunamadı.',1);await addDoc(collection(db,'gifts'),{from:uid,fromName:S.name,to:s.data().uid,crop:k,qty:q,createdAt:Date.now()});add(k,-q);say('Hediye gönderildi 🎁')}
  else if(a==='hp'){const t=d.id;if(t===uid)return;if(Date.now()-(S.hp[t]||0)<6e5)return say('Bu oyuncuya 10 dk sonra tekrar yardım edebilirsin.',1);await addDoc(collection(db,'help'),{from:uid,fromName:S.name,to:t,plot:Math.floor(Math.random()*8),createdAt:Date.now()});S.hp[t]=Date.now();S.coins+=10;gx(5);S.st.h=(S.st.h||0)+1;say('🤝 Yardım gönderildi: +10 🪙')}
  else if(a==='gj'||a==='gk'||a==='gl'){if(a==='gj')S.guild=d.id;else if(a==='gl')S.guild=null;else{const n=$('gnm').value.trim();if(n.length<3)return say('Lonca adı en az 3 karakter.',1);S.guild=(await addDoc(collection(db,'guilds'),{name:n,leader:uid,createdAt:Date.now()})).id}
-  await setDoc(doc(db,'users',uid),S);dirty=false;koAt=0;say(S.guild?'Lonca hazır.':'Loncadan ayrıldın.')}
+  await flush();dirty=false;koAt=0;say(S.guild?'Lonca hazır.':'Loncadan ayrıldın.')}
  else if(a==='vg'){const k=d.k,O=vOrder(wk()),need=(O.find(x=>x[0]===k)||[0,0])[1],ref=doc(db,'village','w'+wk());
   const g=await runTransaction(db,async tx=>{const s=await tx.get(ref),v=s.exists()?s.data():{done:{},by:{},n:0},dn={...(v.done||{})},by={...(v.by||{})},x=Math.min(have(k),need-(dn[k]||0),60);if(x<=0)throw 0;dn[k]=(dn[k]||0)+x;by[uid]=(by[uid]||0)+x;tx.set(ref,{done:dn,by,n:(v.n||0)+x});return x});
   add(k,-g);gx(I[k][2]*g/8);S.st.v=(S.st.v||0)+g;say('Köye '+g+' '+nm(k)+' verdin.');post(S.name+' köy siparişine '+g+' '+nm(k)+' verdi');await loadVW()}
@@ -257,11 +262,12 @@ onAuthStateChanged(auth,async u=>{
  if(!s.exists()){let n=pend||'Oyuncu';
   try{await setDoc(doc(db,'names',nk(n)),{uid})}catch(e1){n=n.slice(0,13)+Math.floor(Math.random()*900+100);try{await setDoc(doc(db,'names',nk(n)),{uid})}catch(e2){}}
   await setDoc(r,{name:n,coins:50,xp:0,inv:{},plots:Array(8).fill(null),pf:null});s=await getDoc(r)}
- S=s.data();S.inv=Object.fromEntries(Object.entries(S.inv||{}).filter(([k,v])=>I[k]&&v>0));S.mk=S.mk||{};S.xp=S.xp||0;S.cu=(Array.isArray(S.cu)?S.cu:[]).filter(c=>c&&Array.isArray(c.w)&&Array.isArray(c.w[0])&&c.e);S.q=S.q||0;S.st=S.st||{c:0,l:0};S.sr=S.sr||{d:0,n:0};S.np=S.np||{h:0,s:{}};S.ac=S.ac||{};S.hp=S.hp||{};S.guild=S.guild||null;S.vw=S.vw&&S.vw.w===wk()?S.vw:{w:wk(),c:0};VW=null;vwAt=0;S.cn=S.cn||Date.now();S.an=Array.from({length:8},(_,i)=>(S.an||[])[i]).map(a=>a&&AN[a.k]?a:null);S.plots=Array.from({length:8},(_,i)=>(S.plots||[])[i]).map(p=>p&&p.s&&CR[p.s]?p:null);if(!PF[S.pf])S.pf=null;
+ S=s.data();S.inv=Object.fromEntries(Object.entries(S.inv||{}).filter(([k,v])=>I[k]&&v>0));S.mk=S.mk||{};S.xp=S.xp||0;S.cu=(Array.isArray(S.cu)?S.cu:[]).filter(c=>c&&Array.isArray(c.w)&&c.w.length&&c.e).map(c=>({...c,w:unw(c.w)}));S.q=S.q||0;S.st=S.st||{c:0,l:0};S.sr=S.sr||{d:0,n:0};S.np=S.np||{h:0,s:{}};S.ac=S.ac||{};S.hp=S.hp||{};S.guild=S.guild||null;S.vw=S.vw&&S.vw.w===wk()?S.vw:{w:wk(),c:0};VW=null;vwAt=0;S.cn=S.cn||Date.now();S.an=Array.from({length:8},(_,i)=>(S.an||[])[i]).map(a=>a&&AN[a.k]?a:null);S.plots=Array.from({length:8},(_,i)=>(S.plots||[])[i]).map(p=>p&&p.s&&CR[p.s]?p:null);if(!PF[S.pf])S.pf=null;
  tab='work';await collectAll().catch(()=>{});draw()});
-setInterval(()=>{if(S&&dirty){dirty=false;setDoc(doc(db,'users',uid),S).catch(()=>{dirty=true})}},4000);
+setInterval(()=>{if(S&&dirty){dirty=false;flush().catch(e=>{dirty=true;console.error('Kayıt hatası',e);if(Date.now()-svErr>20000){svErr=Date.now();say('Kayıt başarısız: '+(e.code||e.message),1)}})}},4000);
 setInterval(()=>{if(S)collectAll().catch(()=>{})},30000);
 setInterval(()=>{if(!S||!S.pf)return;const n=Date.now(),c0=S.cu.length;S.cu=S.cu.filter(c=>c.e>n);let ch=S.cu.length!==c0;if(S.cu.length>=10)S.cn=n;else{let k=Math.min(Math.floor((n-S.cn)/CUT),10-S.cu.length),k0=k;if(k>0){while(k--)S.cu.push(newCust());S.cn=S.cu.length>=10?n:S.cn+k0*CUT;ch=true}}if(ch)save();$('cb').textContent=S.cu.length||'';$('wb').textContent=readyN()||'';{const rn=readyN();if(rn>pr&&document.hidden&&window.Notification&&Notification.permission==='granted')new Notification('Çiftlik Çarşısı',{body:'İşin hazır!'});pr=rn}if(tab==='cust'||(tab==='work'&&S.pf!=='market'))draw()},1000);
-document.addEventListener('visibilitychange',()=>{if(S&&dirty&&document.hidden){dirty=false;setDoc(doc(db,'users',uid),S)}});
+document.addEventListener('visibilitychange',()=>{if(S&&dirty&&document.hidden){dirty=false;flush().catch(()=>{dirty=true})}});
+window.addEventListener('pagehide',()=>{if(S&&dirty){dirty=false;flush().catch(()=>{})}});
 
 </script></body></html>
