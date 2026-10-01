@@ -28,6 +28,7 @@ input{font:inherit;padding:8px;border:2px solid var(--line);border-radius:10px;b
 .row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}.row:last-child{border:0}
 .f{display:flex;gap:4px;flex-wrap:wrap}.f input{width:64px;margin:0;padding:6px}
 .mut{color:var(--mut);font-size:13px}.msg{min-height:22px;font-size:14px;color:var(--leaf);font-weight:600;margin:0 0 8px}.msg.err,#aerr{color:var(--bad)}
+.chat{max-height:320px;overflow:auto;border:2px solid var(--line);border-radius:10px;padding:8px;background:var(--bg)}.cm{padding:3px 0;font-size:14px;word-break:break-word}
 </style>
 </head>
 <body>
@@ -48,23 +49,26 @@ input{font:inherit;padding:8px;border:2px solid var(--line);border-radius:10px;b
     <button class="t" data-v="garden">🌾 Bahçe</button>
     <button class="t" data-v="market">🛒 Pazar</button>
     <button class="t" data-v="top">🏆 Sıralama</button>
+    <button class="t" data-v="chat">💬 Sohbet</button>
   </div>
   <p class="msg" id="msg" role="status"></p>
   <section id="v-garden">
     <div class="grid" id="grid"></div>
     <div class="tools" id="tools"></div>
+    <div id="mo"></div>
     <div class="card"><h2>Dükkan</h2><div id="shop"></div></div>
   </section>
   <section id="v-market" hidden>
     <div class="card"><div id="mk-inv"></div></div>
     <div class="card"><h2>Oyuncu pazarı</h2><div id="mk-list"></div></div>
   </section>
-  <section id="v-top" hidden><div class="card"><h2>En iyi bahçıvanlar</h2><div id="tp"></div></div></section>
+  <section id="v-top" hidden><div class="card"><h2>En iyi bahçıvanlar</h2><p class="mut">Rakibine köstebek gönder: tarlasını kapatır, kaldırması altına mal olur.</p><div id="tp"></div></div></section>
+  <section id="v-chat" hidden><div class="card"><h2>Genel sohbet</h2><div id="cl" class="chat"></div><div class="f" style="margin-top:8px"><input id="ci" maxlength="140" placeholder="Mesaj yaz…" style="flex:1;width:auto"><button class="btn" data-chat="1">Gönder</button></div></div></section>
 </div>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import {getFirestore,doc,getDoc,setDoc,collection,query,orderBy,limit,getDocs,addDoc,where,deleteDoc,runTransaction} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {getFirestore,doc,getDoc,setDoc,collection,query,orderBy,limit,getDocs,addDoc,where,deleteDoc,runTransaction,onSnapshot} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 const firebaseConfig = {
   apiKey: "AIzaSyB91qaXPfss8qloRDsUV8snNIaA8CXf_b4",
   authDomain: "bahcivanlar-17544.firebaseapp.com",
@@ -84,6 +88,9 @@ const C={
  balkabagi:{n:'Balkabağı',e:'🎃',g:300,s:50,p:100,l:7,x:20}
 };
 let S,uid,pend,tool='water',moles={},nextEv=0,dirty=false;
+const P={havuc:[0,7],marul:[6,18],sogan:[10,26],cilek:[16,42],domates:[24,62],misir:[36,100],balkabagi:[60,190]};
+for(const k in P){C[k].s=P[k][0];C[k].p=P[k][1]}
+const MOLE_SEND=50,MOLE_FIX=30;let unChat=null,lastChat=0;
 const $=i=>document.getElementById(i);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const lvl=()=>Math.floor(Math.sqrt(S.xp/10))+1;
@@ -91,7 +98,7 @@ const unl=()=>Object.keys(C).filter(k=>C[k].l<=lvl());
 const npc=k=>Math.round(C[k].p*.8)*(S.inv[k]||0);
 const save=()=>{dirty=true};
 const say=(t,e)=>{const m=$('msg');m.textContent=t;m.className='msg'+(e?' err':'')};
-const newUser=n=>({name:n||'Bahçıvan',coins:50,xp:0,inv:{},plots:Array(8).fill(null),gnome:false});
+const newUser=n=>({name:n||'Bahçıvan',coins:50,xp:0,inv:{},plots:Array(8).fill(null),gnome:false,moles:[],lastMole:0,lastBonus:0});
 
 /* ---------- Giriş / kayıt ---------- */
 const errs={'auth/invalid-credential':'E-posta veya şifre hatalı.','auth/email-already-in-use':'Bu e-posta zaten kayıtlı.','auth/weak-password':'Şifre en az 6 karakter olmalı.','auth/invalid-email':'Geçersiz e-posta.','auth/missing-password':'Şifre gir.'};
@@ -104,18 +111,18 @@ $('reg').onclick=()=>{
 };
 onAuthStateChanged(auth,async u=>{
  $('auth').hidden=!!u;$('app').hidden=!u;
- if(!u){uid=null;S=null;return}
+ if(!u){uid=null;S=null;if(unChat){unChat();unChat=null}return}
  uid=u.uid;const r=doc(db,'users',uid);let s=await getDoc(r);
  if(!s.exists()){await setDoc(r,newUser(pend));s=await getDoc(r)}
- S=s.data();nextEv=Date.now()+20000;
- await collect();draw();show('garden');
+ S=s.data();S.moles=S.moles||[];S.plots=S.plots.map(p=>p&&p.w?null:p);nextEv=Infinity;
+ await collect();await getMoles();draw();show('garden');startChat();
 });
 
 /* ---------- Bahçe ---------- */
 function click(i){
  const p=S.plots[i];
- if(moles[i]){delete moles[i];S.coins+=2;say('Köstebeği yakaladın! +2 🪙')}
- else if(p&&p.w){S.plots[i]=null;S.coins+=1;say('Yabani ot temizlendi. +1 🪙')}
+ if(hasMole(i))say('Bu tarlada köstebek var! Aşağıdan altınla kaldır.',1);
+ 
  else if(p&&p.c){
   const c=C[p.c];
   if(p.at&&Date.now()-p.at>=c.g*1000){
@@ -133,8 +140,8 @@ function drawGrid(){
  const now=Date.now();
  $('grid').innerHTML=S.plots.map((p,i)=>{
   let h='',cls='p',lab='Boş tarla';
-  if(moles[i]){cls+=' mole';h='🕳️';lab='Köstebek'}
-  else if(p&&p.w){h='🌿';lab='Yabani ot'}
+  if(hasMole(i)){cls+=' mole';h='🕳️'+(p&&p.c?'<span class="d">'+C[p.c].e+'</span>':'');lab='Köstebek'}
+  
   else if(p){
    const c=C[p.c],pr=p.at?Math.min(1,(now-p.at)/(c.g*1000)):0;
    if(pr>=1){h=c.e;cls+=' ready';lab=c.n+' hazır'}
@@ -148,12 +155,13 @@ function drawBar(){
  $('bar').innerHTML='<span>👤 '+esc(S.name)+'</span><span>🪙 '+S.coins+'</span><span>⭐ Seviye '+l+'</span><span class="mut">'+S.xp+' / '+hi+' XP</span><button class="btn" data-out="1">Çıkış</button><div class="xp"><i style="width:'+Math.min(100,(S.xp-lo)/(hi-lo)*100)+'%"></i></div>';
 }
 function drawPanels(){
- $('tools').innerHTML='<button class="t" data-tool="water" aria-pressed="'+(tool==='water')+'">💧 Sula</button>'+unl().map(k=>'<button class="t" data-tool="'+k+'" aria-pressed="'+(tool===k)+'">'+C[k].e+' '+C[k].n+' ('+C[k].s+')</button>').join('');
+ $('tools').innerHTML='<button class="t" data-tool="water" aria-pressed="'+(tool==='water')+'">💧 Sula</button>'+unl().map(k=>'<button class="t" data-tool="'+k+'" aria-pressed="'+(tool===k)+'">'+C[k].e+' '+C[k].n+' ('+(C[k].s||'bedava')+')</button>').join('');
  const pc=S.plots.length*50-200;
- $('shop').innerHTML='<div class="row"><span>🟫 Yeni tarlalar (+4) <span class="mut">'+S.plots.length+'/20</span></span><button class="btn" data-buy="plot"'+(S.plots.length>=20||S.coins<pc?' disabled':'')+'>'+(S.plots.length>=20?'En fazla':pc+' 🪙')+'</button></div>'+
+ const bd=Date.now()-(S.lastBonus||0)<864e5;
+ $('shop').innerHTML='<div class="row"><span>🎁 Günlük hediye</span><button class="btn" data-bonus="1"'+(bd?' disabled':'')+'>'+(bd?'Yarın tekrar gel':(40+lvl()*10)+' 🪙 al')+'</button></div><div class="row"><span>🟫 Yeni tarlalar (+4) <span class="mut">'+S.plots.length+'/20</span></span><button class="btn" data-buy="plot"'+(S.plots.length>=20||S.coins<pc?' disabled':'')+'>'+(S.plots.length>=20?'En fazla':pc+' 🪙')+'</button></div>'+
   '<div class="row"><span>🧙 Sulama cücesi <span class="mut">(Seviye 3)</span></span><button class="btn" data-buy="gnome"'+(S.gnome||lvl()<3||S.coins<300?' disabled':'')+'>'+(S.gnome?'Satın alındı':'300 🪙')+'</button></div>';
 }
-function draw(){drawBar();drawGrid();drawPanels()}
+function draw(){drawBar();drawGrid();drawPanels();drawMoles()}
 
 /* ---------- Pazar ---------- */
 async function collect(){
@@ -171,14 +179,37 @@ async function drawMarket(){
 }
 async function drawTop(){
  $('tp').innerHTML='<p class="mut">Yükleniyor…</p>';
- const qs=await getDocs(query(collection(db,'users'),orderBy('xp','desc'),limit(10)));
- $('tp').innerHTML=qs.docs.map((d,i)=>{const x=d.data();return '<div class="row"><span>'+(i+1)+'. '+esc(x.name)+'</span><span class="mut">Seviye '+(Math.floor(Math.sqrt(x.xp/10))+1)+' · '+x.xp+' XP</span></div>'}).join('');
+ const qs=await getDocs(query(collection(db,'users'),orderBy('xp','desc'),limit(20)));
+ $('tp').innerHTML=qs.docs.map((d,i)=>{const x=d.data();return '<div class="row"><span>'+(i+1)+'. '+esc(x.name)+'</span><span class="mut">Seviye '+(Math.floor(Math.sqrt(x.xp/10))+1)+' · '+x.xp+' XP</span>'+(d.id===uid?'':'<button class="btn" data-mole="'+d.id+'">🕳️ Gönder ('+MOLE_SEND+' 🪙)</button>')+'</div>'}).join('');
 }
 function show(v){
- ['garden','market','top'].forEach(k=>{$('v-'+k).hidden=k!==v});
+ ['garden','market','top','chat'].forEach(k=>{$('v-'+k).hidden=k!==v});
  document.querySelectorAll('#tabs .t').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===v));
  if(v==='market')drawMarket();if(v==='top')drawTop();
 }
+
+/* ---------- Köstebek, sohbet ---------- */
+const hasMole=i=>S.moles.some(m=>m.plot===i);
+async function getMoles(){
+ const qs=await getDocs(query(collection(db,'attacks'),where('to','==',uid)));
+ for(const d of qs.docs){
+  const x=d.data(),free=S.plots.map((_,i)=>i).filter(i=>!hasMole(i));
+  if(free.length&&S.moles.length<3){S.moles.push({plot:free[Math.floor(Math.random()*free.length)],from:String(x.fromName||'?').slice(0,16)});say('🕳️ '+x.fromName+' sana köstebek gönderdi!',1)}
+  await deleteDoc(d.ref);
+ }
+ if(!qs.empty){save();draw()}
+}
+function drawMoles(){
+ $('mo').innerHTML=S.moles.length?'<div class="card"><h2>🕳️ Köstebekler</h2>'+S.moles.map((m,i)=>'<div class="row"><span>'+esc(m.from)+' gönderdi <span class="mut">(tarla '+(m.plot+1)+')</span></span><button class="btn" data-fix="'+i+'"'+(S.coins<MOLE_FIX?' disabled':'')+'>Kaldır ('+MOLE_FIX+' 🪙)</button></div>').join('')+'</div>':'';
+}
+function startChat(){
+ if(unChat)unChat();
+ unChat=onSnapshot(query(collection(db,'chat'),orderBy('createdAt','desc'),limit(40)),qs=>{
+  $('cl').innerHTML=qs.docs.slice().reverse().map(d=>{const x=d.data();return '<div class="cm"><b>'+esc(x.name)+':</b> '+esc(x.text)+'</div>'}).join('');
+  $('cl').scrollTop=1e6;
+ },()=>{});
+}
+$('ci').addEventListener('keydown',e=>{if(e.key==='Enter')document.querySelector('[data-chat]').click()});
 
 /* ---------- Olaylar ---------- */
 document.addEventListener('click',async e=>{
@@ -189,6 +220,20 @@ document.addEventListener('click',async e=>{
   if(d.out)return signOut(auth);
   if(d.tool)tool=d.tool;
   else if(d.buy==='plot'){const pc=S.plots.length*50-200;if(S.coins>=pc&&S.plots.length<20){S.coins-=pc;S.plots.push(null,null,null,null);say('Yeni tarlalar açıldı.')}}
+  else if(d.bonus&&Date.now()-(S.lastBonus||0)>=864e5){const b=40+lvl()*10;S.coins+=b;S.lastBonus=Date.now();say('Günlük hediye: +'+b+' 🪙')}
+  else if(d.mole){
+   if(S.coins<MOLE_SEND)return say('Yetersiz altın.',1);
+   if(Date.now()-(S.lastMole||0)<30000)return say('Köstebekler dinleniyor, 30 saniye bekle.',1);
+   const t=await getDoc(doc(db,'users',d.mole));
+   if(!t.exists()||(t.data().moles||[]).length>=3)return say('Bu oyuncuya şu an köstebek gönderilemez.',1);
+   await addDoc(collection(db,'attacks'),{from:uid,fromName:S.name,to:d.mole,createdAt:Date.now()});
+   S.coins-=MOLE_SEND;S.lastMole=Date.now();say('Köstebek gönderildi! -'+MOLE_SEND+' 🪙');
+  }
+  else if(d.fix!==undefined){if(S.coins>=MOLE_FIX){S.coins-=MOLE_FIX;S.moles.splice(+d.fix,1);say('Köstebek kaldırıldı.')}}
+  else if(d.chat){
+   const t=$('ci').value.trim().slice(0,140);if(!t||Date.now()-lastChat<2000)return;
+   lastChat=Date.now();$('ci').value='';await addDoc(collection(db,'chat'),{uid,name:S.name,text:t,createdAt:Date.now()});return;
+  }
   else if(d.buy==='gnome'&&S.coins>=300&&!S.gnome){S.coins-=300;S.gnome=true;say('Sulama cücesi işe başladı.')}
   else if(d.npc){const k=d.npc,g=npc(k);S.coins+=g;S.inv[k]=0;say('Tüccara satıldı. +'+g+' 🪙');save();draw();return drawMarket()}
   else if(d.list){
@@ -216,7 +261,7 @@ document.addEventListener('click',async e=>{
 setInterval(()=>{
  if(!S)return;const now=Date.now();
  for(const k in moles)if(now>moles[k]){delete moles[k];if(S.plots[k]?.c){S.plots[k]=null;say('Bir köstebek mahsulünü yedi!',1);save()}}
- if(S.gnome)S.plots.forEach(p=>{if(p?.c&&!p.at){p.at=now;save()}});
+ if(S.gnome)S.plots.forEach((p,i)=>{if(p?.c&&!p.at&&!hasMole(i)){p.at=now;save()}});
  if(now>nextEv){
   nextEv=now+20000+Math.random()*15000;
   const empty=[],pl=[];S.plots.forEach((p,i)=>{if(!p)empty.push(i);else if(p.c&&!moles[i])pl.push(i)});
@@ -228,6 +273,7 @@ setInterval(()=>{
 },500);
 setInterval(()=>{if(S&&dirty){dirty=false;setDoc(doc(db,'users',uid),S).catch(()=>{dirty=true})}},4000);
 setInterval(()=>{if(S)collect().catch(()=>{})},30000);
+setInterval(()=>{if(S)getMoles().catch(()=>{})},20000);
 document.addEventListener('visibilitychange',()=>{if(S&&dirty&&document.hidden){dirty=false;setDoc(doc(db,'users',uid),S)}});
 
 </script>
