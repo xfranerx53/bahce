@@ -46,7 +46,7 @@ input[type=checkbox]{width:auto;margin:0 8px 0 0}.chk{display:block;margin:4px 0
   <p class="mut"><a href="#" id="sw">Hesabın yok mu? Kayıt ol</a> <a href="#" id="rst" hidden>· Şifremi sıfırla</a></p>
   <p id="aerr" role="alert"></p>
 </form>
-<div id="app" hidden><div class="card bar" id="bar"></div><p class="msg" id="msg" role="status"></p><main id="v"></main>
+<div id="app" hidden><div class="card bar" id="bar"></div><p class="msg" id="msg" role="status"></p><div class="card" id="rnb" hidden><h2>✏️ İsmini değiştir</h2><input id="rni" maxlength="16" placeholder="Yeni isim" autocomplete="off" spellcheck="false"><p class="mut" id="rnh"></p><div class="f"><button class="btn go" id="rny" type="button">Değiştir</button><button class="btn" id="rnc" type="button">Vazgeç</button></div></div><main id="v"></main>
 <nav class="tabs" id="tabs" hidden><button class="t" data-a="tab" data-v="work"><span>🧑‍🌾</span>İş<b class="bdg" id="wb"></b></button><button class="t" data-a="tab" data-v="stall"><span>🏪</span>Tezgah</button><button class="t" data-a="tab" data-v="cust"><span>👥</span>Müşteri<b class="bdg" id="cb"></b></button><button class="t" data-a="tab" data-v="pazar"><span>🛍️</span>Pazar</button><button class="t" data-a="tab" data-v="market"><span>🛒</span>Market</button><button class="t" data-a="tab" data-v="koy"><span>🏘️</span>Köy<b class="bdg" id="kb"></b></button></nav></div>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -61,7 +61,7 @@ const firebaseConfig = {
 
 
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
-let S,uid,pend,dirty=false,tab='work',sel=null,sd='havuc';
+let S,uid,pend,dirty=false,rnBusy=false,tab='work',sel=null,sd='havuc';
 const $=i=>document.getElementById(i),esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),fmt=n=>Number(n).toLocaleString('tr-TR');
 const nk=n=>'n_'+encodeURIComponent(n.trim().toLowerCase()).replace(/\./g,'%2E');
 const I={},CR={},AN={},RC=[];
@@ -210,7 +210,7 @@ async function loadPz(){const qs=await getDocs(query(collection(db,'listings'),w
  const ls=qs.docs.map(d=>({id:d.id,...d.data()})).filter(d=>I[d.crop]).sort((a,b)=>b.createdAt-a.createdAt);PZ.length=0;PZ.push(...ls);pzAt=Date.now();if(tab==='cust')draw();
  if(tab==='pazar'&&$('pl'))$('pl').innerHTML=ls.map(d=>'<div class="row"><span>'+em(d.crop)+' '+nm(d.crop)+' ×'+d.qty+' <span class="mut">'+d.price+' 🪙/adet (adil '+I[d.crop][2]+') · '+esc(d.name)+(PZ.filter(y=>y.crop===d.crop).length>=3?' · 📉 bol':'')+'</span></span>'+(d.seller===uid?'<button class="btn" data-a="cx" data-id="'+d.id+'">İptal</button>':'<span class="f"><input id="q_'+d.id+'" class="bq" type="number" min="1" max="'+d.qty+'" value="'+d.qty+'" data-p="'+d.price+'" data-b="b_'+d.id+'" aria-label="Alınacak adet"><button class="btn" id="b_'+d.id+'" data-a="bl" data-id="'+d.id+'"'+(S.coins<d.price*d.qty?' disabled':'')+'>Al '+d.price*d.qty+' 🪙</button></span>')+'</div>').join('')||'<p class="mut">İlan yok. İlk ilanı tezgahından ver.</p>'}
 function draw(){
- $('bar').innerHTML='<span>'+(S.pf?PF[S.pf][0]+' ':'')+esc(S.name)+(S.pf?' · Sv '+lv()+' <small class="mut">'+S.xp+'/'+lv()**2*25+'</small>':'')+'</span><b>🪙 '+fmt(S.coins)+'</b><button class="btn" data-a="out">Çıkış</button>';
+ $('bar').innerHTML='<span>'+(S.pf?PF[S.pf][0]+' ':'')+esc(S.name)+(S.pf?' · Sv '+lv()+' <small class="mut">'+S.xp+'/'+lv()**2*25+'</small>':'')+'</span><b>🪙 '+fmt(S.coins)+'</b><button class="btn" data-rn="open" aria-label="İsmi değiştir" title="İsmi değiştir">✏️</button><button class="btn" data-a="out">Çıkış</button>';
  $('tabs').hidden=!S.pf;
  if(!S.pf){$('v').innerHTML='<div class="card"><h2>Mesleğini seç</h2>'+Object.keys(PF).map(k=>'<div class="row"><span>'+PF[k][0]+' <b>'+PF[k][1]+'</b><br><span class="mut">'+PF[k][3]+'</span></span><button class="btn" data-a="pf" data-k="'+k+'">Seç</button></div>').join('')+'</div>';return}
  $('cb').textContent=S.cu.length||'';$('wb').textContent=readyN()||'';
@@ -298,6 +298,37 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-a]')
  if(S.pf)lgin();
  save();draw()});
 
+/* ---- isim değiştirme: benzersiz, 24 saatte en fazla 1 kez ---- */
+const RNCD=864e5;
+const rnWait=()=>Math.max(0,(S.nameAt||0)+RNCD-Date.now());
+const rnTxt=ms=>{const m=Math.ceil(ms/6e4),h=Math.floor(m/60);return h?h+' sa '+(m%60)+' dk':m+' dk'};
+const rnMsg=(t,bad)=>{const h=$('rnh');h.textContent=t;h.style.color=bad?'var(--bad)':''};
+const rnOpen=()=>{const p=$('rnb');p.hidden=!p.hidden;if(p.hidden)return;$('rni').value=S.name;const w=rnWait();rnMsg(w?'İsmini tekrar değiştirmek için '+rnTxt(w)+' beklemelisin.':'3-16 karakter; harf, rakam ve _ kullan. Değiştirdikten sonra 24 saat yeniden değiştiremezsin. Giriş kullanıcı adın aynı kalır.',!!w);$('rni').focus();$('rni').select()};
+document.addEventListener('click',e=>{if(S&&e.target.closest('[data-rn]'))rnOpen()});
+$('rnc').onclick=()=>{$('rnb').hidden=true};
+$('rni').onkeydown=e=>{if(e.key==='Enter')$('rny').click()};
+$('rny').onclick=async()=>{
+ if(!S||!uid||rnBusy)return;
+ const nn=$('rni').value.trim();
+ if(nn===S.name)return rnMsg('Bu zaten senin ismin.',1);
+ if(!UNOK.test(nn))return rnMsg('İsim 3-16 karakter olmalı; harf, rakam ve _ kullan.',1);
+ const w=rnWait();if(w)return rnMsg('İsmini tekrar değiştirmek için '+rnTxt(w)+' beklemelisin.',1);
+ const kn=nk(nn),ko=S.nkey||null;
+ if(kn===ko)return rnMsg('Bu isim zaten senin (büyük/küçük harf farkı sayılmaz).',1);
+ rnBusy=true;$('rny').disabled=true;rnMsg('Kontrol ediliyor…');
+ try{
+  if((await getDoc(doc(db,'names',kn))).exists())return rnMsg('Bu isim alınmış, başka bir tane dene.',1);
+  const now=Date.now(),b=writeBatch(db);
+  b.set(doc(db,'names',kn),{uid});
+  if(ko)b.delete(doc(db,'names',ko));
+  b.set(doc(db,'users',uid),{...pack(),name:nn,nkey:kn,nameAt:now});
+  await b.commit();
+  S.name=nn;S.nkey=kn;S.nameAt=now;dirty=false;
+  $('rnb').hidden=true;say('İsmin "'+nn+'" olarak değişti ✅');ping();draw();
+ }catch(e){rnMsg(e.code==='permission-denied'?'İsim değiştirilemedi: isim alınmış olabilir ya da bekleme süresi dolmadı.':'Hata: '+(e.code||e.message),1)}
+ finally{rnBusy=false;$('rny').disabled=false}
+};
+
 const errs={'auth/invalid-credential':'Kullanıcı adı veya şifre hatalı.','auth/email-already-in-use':'Bu kullanıcı adı alınmış.','auth/weak-password':'Şifre en az 6 karakter olmalı.','auth/invalid-email':'Geçersiz kullanıcı adı.','auth/missing-password':'Şifre gir.','auth/too-many-requests':'Çok fazla deneme, biraz bekle.','auth/network-request-failed':'Bağlantı yok.'};
 const aerr=e=>{$('aerr').textContent=errs[e.code]||('Hata: '+e.code)};
 const fold=x=>x.trim().toLocaleLowerCase('tr').replace(/ç/g,'c').replace(/ğ/g,'g').replace(/ı/g,'i').replace(/ö/g,'o').replace(/ş/g,'s').replace(/ü/g,'u');
@@ -335,11 +366,11 @@ onAuthStateChanged(auth,async u=>{
   s=await getDoc(r);if(!s.exists()){$('aerr').textContent='Hesap oluşturulamadı, tekrar dene.';return signOut(auth)}}
  S=s.data();S.inv=Object.fromEntries(Object.entries(S.inv||{}).filter(([k,v])=>I[k]&&v>0));S.mk=S.mk||{};S.xp=S.xp||0;S.cu=(Array.isArray(S.cu)?S.cu:[]).filter(c=>c&&Array.isArray(c.w)&&c.w.length&&c.e).map(c=>({...c,w:unw(c.w)}));S.q=S.q||0;S.st=S.st||{c:0,l:0};S.sr=S.sr||{d:0,n:0};S.np=S.np||{h:0,s:{}};S.ac=S.ac||{};S.hp=S.hp||{};S.guild=S.guild||null;S.vw=S.vw&&S.vw.w===wk()?S.vw:{w:wk(),c:0};VW=null;vwAt=0;dmAt=0;DM=[];GD=null;PRF=null;S.cn=S.cn||Date.now();S.an=Array.from({length:Math.max(8,Math.min(12,(S.an||[]).length))},(_,i)=>(S.an||[])[i]).map(a=>a&&AN[a.k]?a:null);S.plots=Array.from({length:Math.max(8,Math.min(16,(S.plots||[]).length))},(_,i)=>(S.plots||[])[i]).map(p=>p&&p.s&&CR[p.s]?p:null);if(!PF[S.pf])S.pf=null;S.qu=(Array.isArray(S.qu)?S.qu:[]).filter(j=>j&&RC[j.r]&&j.e);S.dc=S.dc||{};delete S.tr;
  tab='work';ping();lgin();await collectAll().catch(()=>{});draw()});
-setInterval(()=>{if(S&&dirty){dirty=false;flush().catch(e=>{dirty=true;console.error('Kayıt hatası',e);if(Date.now()-svErr>20000){svErr=Date.now();say('Kayıt başarısız: '+(e.code||e.message),1)}})}},4000);
+setInterval(()=>{if(S&&dirty&&!rnBusy){dirty=false;flush().catch(e=>{dirty=true;console.error('Kayıt hatası',e);if(Date.now()-svErr>20000){svErr=Date.now();say('Kayıt başarısız: '+(e.code||e.message),1)}})}},4000);
 setInterval(()=>{if(S)collectAll().catch(()=>{})},30000);
 setInterval(()=>{if(!S||!S.pf)return;const n=Date.now(),c0=S.cu.length;S.cu=S.cu.filter(c=>c.e>n);let ch=S.cu.length!==c0;if(S.cu.length>=10)S.cn=n;else{let k=Math.min(Math.floor((n-S.cn)/CUT),10-S.cu.length),k0=k;if(k>0){while(k--)S.cu.push(newCust());S.cn=S.cu.length>=10?n:S.cn+k0*CUT;ch=true}}if(ch)save();$('cb').textContent=S.cu.length||'';$('wb').textContent=readyN()||'';{const rn=readyN();if(rn>pr&&document.hidden&&window.Notification&&Notification.permission==='granted')new Notification('Çiftlik Çarşısı',{body:'İşin hazır!'});pr=rn}if(tab==='cust'||tab==='work')draw()},1000);
 setInterval(()=>{if(S&&!document.hidden)ping()},6e4);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)ping();if(S&&dirty&&document.hidden){dirty=false;flush().catch(()=>{dirty=true})}});
-window.addEventListener('pagehide',()=>{if(uid)deleteDoc(doc(db,'presence',uid)).catch(()=>{});if(S&&dirty){dirty=false;flush().catch(()=>{})}});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)ping();if(S&&dirty&&!rnBusy&&document.hidden){dirty=false;flush().catch(()=>{dirty=true})}});
+window.addEventListener('pagehide',()=>{if(uid)deleteDoc(doc(db,'presence',uid)).catch(()=>{});if(S&&dirty&&!rnBusy){dirty=false;flush().catch(()=>{})}});
 
 </script></body></html>
